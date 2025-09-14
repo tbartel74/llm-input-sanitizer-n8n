@@ -44,6 +44,9 @@ interactions with Large Language Models (LLMs).
 │       └── ci.yml
 ├── docs/
 │   └── index.md
+├── examples/
+│   ├── AI Agent with LLama-guard-4(groq) with input sanitizer.json
+│   └── AI Agent with prompt-guard-2 (groq) with input sanitizer.json
 ├── n8n/
 │   └── workflows/
 │       └── sanitizer.workflow.json
