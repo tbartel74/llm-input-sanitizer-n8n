@@ -195,3 +195,4 @@ the analysis process:
   * `injectionPatterns`: The specific patterns that were matched during
     detection.
   * `secretsMasked`: A list of the types of secrets that were masked.
+  
