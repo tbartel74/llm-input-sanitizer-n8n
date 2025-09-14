@@ -1,0 +1,557 @@
+{
+  "name": "AI Agent with prompt-guard-2 (groq) with input sanitizer",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2208,
+        160
+      ],
+      "id": "270ee3eb-50f6-4b2e-8368-8ea65178896e",
+      "name": "When chat message received",
+      "webhookId": "878cd82c-9414-459b-a64b-baab23e8d454"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bcd2227-9408-4531-9203-7b42cc8fcde8",
+              "name": "resposeText",
+              "value": "Twoje pytanie nie jest bezpieczne. Ryzyko jest CRITICAL",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -272,
+        -240
+      ],
+      "id": "59e78873-a630-43ba-ab14-31a034a5a790",
+      "name": "Default reply for danger questions"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        704
+      ],
+      "id": "51ba9fbd-492a-47fe-973f-f538ec4a19a1",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "T3S1ZUdBNp27pSuc",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        32,
+        464
+      ],
+      "id": "e1a9b03e-7abc-4f3b-82fb-034921b68db2",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        704
+      ],
+      "id": "8154aad8-b528-43b4-935b-48203db3ceb0",
+      "name": "Simple Memory2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77fdde77-f7f0-404b-94b0-9824f4f9f343",
+              "name": "chatInput",
+              "value": "={{ $('When chat message received').item.json.chatInput }}\n\n",
+              "type": "string"
+            },
+            {
+              "id": "b3430eef-b36b-4f66-83c5-461d3f116845",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -272,
+        464
+      ],
+      "id": "b69be662-1437-44df-8a43-cd527c42ca68",
+      "name": "If safe regenerate chat input"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -1168,
+        160
+      ],
+      "id": "43490e0b-94b8-4c0d-83cd-6f444eae6931",
+      "name": "AI Guard"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Pobranie wejścia ===\nconst items = $input.all();\nif (!items || items.length === 0) {\n  throw new Error('No input items available in this node');\n}\n\nconst input = items[0].json || {};\n\n// === Wyciągnięcie liczby z różnych możliwych formatów ===\nlet injectionScore = 0.5; // domyślna wartość\n\n// Próbuj wyciągnąć wartość z różnych możliwych lokalizacji\nif (typeof input === 'number') {\n  injectionScore = input;\n} else if (input.output !== undefined) {\n  // input.output może być stringiem lub liczbą\n  injectionScore = typeof input.output === 'string' ? parseFloat(input.output) : input.output;\n} else if (input.choices && input.choices[0]) {\n  const choice = input.choices[0];\n  const value = choice.text || choice.message?.content || choice;\n  injectionScore = typeof value === 'string' ? parseFloat(value) : value;\n} else if (input.result !== undefined) {\n  injectionScore = typeof input.result === 'string' ? parseFloat(input.result) : input.result;\n}\n\n// Jeśli wciąż mamy string, parsuj go\nif (typeof injectionScore === 'string') {\n  injectionScore = parseFloat(injectionScore);\n}\n\n// Walidacja i ograniczenie do zakresu 0-1\ninjectionScore = isNaN(injectionScore) ? 0.5 : injectionScore;\ninjectionScore = Math.max(0, Math.min(1, injectionScore));\n\n// === Progi konfiguracyjne ===\nconst config = {\n  blockThreshold: 0.5,\n  warnThreshold: 0.3,\n  logThreshold: 0.1\n};\n\n// === Określenie poziomu ryzyka na podstawie rozkładu wartości ===\n// Progi klasyfikacji:\n// 0.8 - 1.0 = CRITICAL (bardzo wysokie zagrożenie)\n// 0.6 - 0.8 = HIGH (wysokie zagrożenie)\n// 0.4 - 0.6 = MEDIUM (średnie zagrożenie)\n// 0.2 - 0.4 = LOW (niskie zagrożenie)\n// 0.0 - 0.2 = MINIMAL (minimalne zagrożenie)\nconst riskLevel = injectionScore >= 0.8 ? 'CRITICAL' :\n                  injectionScore >= 0.6 ? 'HIGH' :\n                  injectionScore >= 0.4 ? 'MEDIUM' :\n                  injectionScore >= 0.2 ? 'LOW' : \n                  'MINIMAL';\n\n// === Określenie akcji i routingu ===\nlet action, route, message;\n\nif (injectionScore >= config.blockThreshold) {\n  action = 'BLOCK';\n  route = 'danger';\n  message = '🚫 Wykryto potencjalnie niebezpieczne elementy w zapytaniu.';\n} else if (injectionScore >= config.warnThreshold) {\n  action = 'WARN_AND_ALLOW';\n  route = 'warning';\n  message = '⚠️ Przetwarzam zapytanie z dodatkowymi środkami ostrożności.';\n} else if (injectionScore >= config.logThreshold) {\n  action = 'ALLOW_WITH_LOG';\n  route = 'safe';\n  message = null;\n} else {\n  action = 'ALLOW';\n  route = 'safe';\n  message = null;\n}\n\n// === Przygotowanie wyniku ===\nconst result = {\n  // Główne dane\n  injectionScore: injectionScore,\n  riskLevel: riskLevel,\n  route: route,\n  action: action,\n  isSafe: route === 'safe',\n  \n  // Wiadomość dla użytkownika (jeśli potrzebna)\n  userMessage: message,\n  \n  // Metadane\n  metadata: {\n    thresholds: config,\n    timestamp: new Date().toISOString(),\n    rawInput: input\n  }\n};\n\n// Zwróć wynik jako item z polem json\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        160
+      ],
+      "id": "d6380cf0-65b2-45fb-9860-686bde7ba94d",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.riskLevel }}",
+                    "rightValue": "CRITICAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b2805cda-dd2e-4386-adde-acf35f3bee1f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CRITICAL"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b180b00c-8f43-4d9d-ac9a-22d21a42c96c",
+                    "leftValue": "={{ $json.riskLevel }}",
+                    "rightValue": "HIGH",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HIGH"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "37a46258-bea7-407e-b53c-4ef2cc2cad2f",
+                    "leftValue": "={{ $json.riskLevel }}",
+                    "rightValue": "MEDIUM",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "MEDIUM"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9e00e15b-093f-4383-9b6c-e551d81beaf0",
+                    "leftValue": "={{ $json.riskLevel }}",
+                    "rightValue": "=LOW",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "LOW"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 3
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -624,
+        128
+      ],
+      "id": "065fe987-c28f-4680-a5bc-9541d26025dd",
+      "name": "Switch",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bcd2227-9408-4531-9203-7b42cc8fcde8",
+              "name": "resposeText",
+              "value": "Twoje pytanie nie jest bezpieczne. Ryzyko jest HIGH",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -272,
+        0
+      ],
+      "id": "2f7c3522-39a2-4984-a05c-94e79788eeb8",
+      "name": "Default reply for danger questions1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bcd2227-9408-4531-9203-7b42cc8fcde8",
+              "name": "resposeText",
+              "value": "Twoje pytanie nie jest bezpieczne. Ryzyko jest MEDIUM",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -272,
+        256
+      ],
+      "id": "e9212b65-2bdb-4c5e-b8dd-5b756fae97b1",
+      "name": "Default reply for danger questions2"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-prompt-guard-2-86m",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        416
+      ],
+      "id": "05829af9-66d9-4978-82c5-43bb1d370cb4",
+      "name": "llama-promot-guard",
+      "credentials": {
+        "groqApi": {
+          "id": "T3S1ZUdBNp27pSuc",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced Input Sanitizer v2.1 - Fixed for n8n compatibility\n// Advanced protection against prompt injection, XSS, Unicode attacks, and data exfiltration\n\n// Get input data using n8n v2 syntax\nconst inputItems = $input.all();\nconst outputs = [];\n\n// Enhanced configuration with all security features\nconst DEFAULT_CONFIG = {\n  // Core settings\n  ENABLE_PROMPT_HEURISTICS: true,\n  MASK_SECRETS: true,\n  DETECT_TEMPLATE_INJECTION: true,\n  AGGRESSIVE_DECODING: true,\n  MAX_DECODE_ITERATIONS: 10,\n  MAX_LENGTH: 5000,\n  STRIP_ALL_TAGS: true,\n  WHITELIST_TAGS: [],\n  LOG_AUDIT: true,\n  SANITIZE_LEVEL: 'maximum',\n  \n  // Enhanced pattern detection\n  PROMPT_PATTERNS: [\n    'ignore previous instructions',\n    'ignore (?:the )?above instructions',\n    'disregard (?:all )?(?:previous|prior) (?:instructions|messages)',\n    'forget (?:everything|what)',\n    'now reveal',\n    'reveal (?:the )?secret',\n    'api[_\\\\-]?key',\n    'secret[:=]',\n    'do not follow previous instructions',\n    'ignore (?:this|the) instruction',\n    'system prompt',\n    'you are now',\n    'act as',\n    'pretend to be',\n    'roleplay as',\n    'bypass (?:the )?(?:filter|security)',\n    'jailbreak',\n    'dan mode',\n    'developer mode'\n  ],\n  \n  // Expanded secret detection\n  SECRET_KEYWORDS: [\n    'API_KEY', 'API-KEY', 'APIKEY',\n    'SECRET', 'SECRET_KEY', 'SECRET-KEY',\n    'TOKEN', 'ACCESS_TOKEN', 'REFRESH_TOKEN',\n    'ACCESS_KEY', 'ACCESS-KEY',\n    'PASSWORD', 'PASSWD', 'PWD',\n    'PRIVATE_KEY', 'PRIVATE-KEY',\n    'AUTH_TOKEN', 'AUTHORIZATION',\n    'BEARER',\n    'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',\n    'DATABASE_URL', 'DB_PASSWORD',\n    'ENCRYPTION_KEY', 'SIGNING_KEY'\n  ],\n  \n  // Template injection patterns\n  TEMPLATE_PATTERNS: [\n    '\\\\{\\\\{.*\\\\}\\\\}',\n    '\\\\$\\\\{.*\\\\}',\n    '<%.*%>',\n    '\\\\{%.*%\\\\}',\n    '#\\\\{.*\\\\}',\n    '\\\\$\\\\(.*\\\\)',\n    '`.*`'\n  ],\n  \n  // Dangerous schemes\n  DANGEROUS_SCHEMES: [\n    'javascript:', 'vbscript:', 'data:', 'blob:',\n    'file:', 'about:', 'chrome:', 'chrome-extension:',\n    'ms-appx:', 'ms-appx-web:', 'ms-local-stream:'\n  ]\n};\n\n// === Helper Functions ===\n\nfunction nowISO() { \n  return new Date().toISOString(); \n}\n\n// Enhanced HTML entity decoder\nfunction decodeHTMLEntities(str) {\n  if (!str) return str;\n  \n  const entityMap = {\n    'lt': '<', 'gt': '>', 'amp': '&', 'quot': '\"', 'apos': \"'\",\n    'nbsp': ' ', 'ndash': '–', 'mdash': '—', 'hellip': '…',\n    'copy': '©', 'reg': '®', 'trade': '™'\n  };\n  \n  return str.replace(/&(#x?[0-9A-Fa-f]+|[A-Za-z]+);/g, (match, group) => {\n    if (!group) return match;\n    \n    if (group[0] === '#') {\n      const isHex = group[1] === 'x' || group[1] === 'X';\n      const num = isHex ? \n        parseInt(group.slice(2), 16) : \n        parseInt(group.slice(1), 10);\n      \n      if (!isNaN(num) && num >= 0 && num <= 0x10FFFF) {\n        try {\n          return String.fromCodePoint(num);\n        } catch(e) {\n          return match;\n        }\n      }\n    }\n    \n    return entityMap[group.toLowerCase()] || match;\n  });\n}\n\n// Aggressive iterative decoder\nfunction aggressiveIterativeDecode(input, config) {\n  if (!input) return input;\n  \n  let prev = null;\n  let current = input;\n  const maxIterations = config.AGGRESSIVE_DECODING ? \n    config.MAX_DECODE_ITERATIONS : 4;\n  \n  for (let i = 0; i < maxIterations && current !== prev; i++) {\n    prev = current;\n    \n    // URL percent-encoding\n    try {\n      const decoded = decodeURIComponent(current);\n      if (decoded !== current) current = decoded;\n    } catch(e) {\n      current = current.replace(/%([0-9A-Fa-f]{2})/g, (m, hex) => {\n        try {\n          return String.fromCharCode(parseInt(hex, 16));\n        } catch(e) {\n          return m;\n        }\n      });\n    }\n    \n    // HTML entities\n    current = decodeHTMLEntities(current);\n    \n    // Unicode escape sequences\n    current = current.replace(/\\\\u([0-9A-Fa-f]{4})/g, (m, hex) => {\n      return String.fromCharCode(parseInt(hex, 16));\n    });\n    \n    // Hex escape sequences\n    current = current.replace(/\\\\x([0-9A-Fa-f]{2})/g, (m, hex) => {\n      return String.fromCharCode(parseInt(hex, 16));\n    });\n    \n    // Plus-encoded spaces\n    current = current.replace(/\\+/g, ' ');\n  }\n  \n  return current;\n}\n\n// Remove invisible and dangerous Unicode\nfunction removeInvisibleAndDangerousChars(str) {\n  if (!str) return str;\n  \n  str = str.normalize('NFKC');\n  \n  // Remove dangerous Unicode categories\n  const patterns = [\n    /[\\u200B-\\u200F]/g,  // Zero-width chars\n    /[\\u202A-\\u202E]/g,  // BIDI control\n    /[\\u2060-\\u206F]/g,  // Format chars\n    /[\\u2066-\\u2069]/g,  // More BIDI\n    /[\\uFE00-\\uFE0F]/g,  // Variation selectors\n    /[\\uFEFF]/g,          // BOM\n    /[\\uFFF9-\\uFFFB]/g   // Interlinear annotation\n  ];\n  \n  patterns.forEach(pattern => {\n    str = str.replace(pattern, '');\n  });\n  \n  // Remove control characters except newline and tab\n  str = str.replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F-\\x9F]/g, '');\n  \n  return str;\n}\n\n// Normalize URI schemes\nfunction normalizeScheme(value) {\n  if (!value) return value;\n  \n  let normalized = value;\n  normalized = normalized.replace(/^[\"']|[\"']$/g, '');\n  normalized = normalized.replace(/[\\s\\u0000-\\u0020\\u007F-\\u009F]+/g, '');\n  \n  try {\n    normalized = decodeURIComponent(normalized);\n  } catch(e) {}\n  \n  normalized = decodeHTMLEntities(normalized);\n  normalized = normalized.toLowerCase();\n  \n  return normalized;\n}\n\n// Enhanced attribute neutralization\nfunction neutralizeAttributesEnhanced(html, config) {\n  if (!html) return html;\n  \n  // Remove event handlers\n  const eventHandlers = [\n    'onclick', 'onerror', 'onload', 'onmouseover', 'onmouseout',\n    'onmousemove', 'onmousedown', 'onmouseup', 'onkeydown', 'onkeyup',\n    'onkeypress', 'onfocus', 'onblur', 'onchange', 'onsubmit',\n    'ondblclick', 'ondrag', 'ondrop', 'oninput', 'onscroll'\n  ];\n  \n  const eventPattern = new RegExp(\n    `\\\\s(${eventHandlers.join('|')})\\\\s*=\\\\s*(?:'[^']*'|\"[^\"]*\"|[^\\\\s>]+)`,\n    'gi'\n  );\n  \n  html = html.replace(eventPattern, '');\n  \n  // Remove dangerous styles\n  html = html.replace(/\\sstyle\\s*=\\s*(?:'[^']*'|\"[^\"]*\"|[^\\s>]+)/gi, '');\n  \n  // Neutralize dangerous URI attributes\n  const uriAttrs = ['href', 'src', 'action', 'formaction', 'data'];\n  const uriPattern = new RegExp(\n    `\\\\s(${uriAttrs.join('|')})\\\\s*=\\\\s*([\"']?)([^\"'\\\\s>]+)\\\\2`,\n    'gi'\n  );\n  \n  html = html.replace(uriPattern, (match, attr, quote, value) => {\n    const normalized = normalizeScheme(value);\n    \n    for (const scheme of config.DANGEROUS_SCHEMES) {\n      if (normalized.startsWith(scheme)) {\n        return ` ${attr}=${quote}#blocked${quote}`;\n      }\n    }\n    \n    if (normalized.startsWith('data:') && \n        /base64|text\\/html|application\\/x-|image\\/svg/i.test(normalized)) {\n      return ` ${attr}=${quote}#blocked${quote}`;\n    }\n    \n    return match;\n  });\n  \n  return html;\n}\n\n// Remove dangerous HTML elements\nfunction removeDangerousElements(html) {\n  if (!html) return html;\n  \n  const dangerousElements = [\n    'script', 'iframe', 'object', 'embed', 'applet',\n    'meta', 'link', 'style', 'base', 'form',\n    'svg', 'math', 'canvas', 'audio', 'video'\n  ];\n  \n  dangerousElements.forEach(tag => {\n    const regex = new RegExp(\n      `<${tag}\\\\b[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>|<${tag}\\\\b[^>]*\\\\/?>`,\n      'gi'\n    );\n    html = html.replace(regex, '');\n  });\n  \n  // Remove comments and other constructs\n  html = html.replace(/<!--[\\s\\S]*?-->/g, '');\n  html = html.replace(/<\\?[\\s\\S]*?\\?>/g, '');\n  html = html.replace(/<!DOCTYPE[^>]*>/gi, '');\n  html = html.replace(/<!\\[CDATA\\[[\\s\\S]*?\\]\\]>/g, '');\n  \n  return html;\n}\n\n// Strip HTML tags\nfunction stripTags(html, whitelist = []) {\n  if (!html) return html;\n  \n  if (!whitelist || whitelist.length === 0) {\n    return html.replace(/<\\/?[^>]+>/g, '');\n  }\n  \n  const allowedTags = whitelist\n    .map(tag => tag.toLowerCase().replace(/[^a-z0-9]/g, ''))\n    .join('|');\n  \n  if (!allowedTags) {\n    return html.replace(/<\\/?[^>]+>/g, '');\n  }\n  \n  const pattern = new RegExp(\n    `<\\\\/?(?!(?:${allowedTags})\\\\b)[^>]+>`,\n    'gi'\n  );\n  \n  return html.replace(pattern, '');\n}\n\n// Clean markdown\nfunction cleanMarkdownSyntax(text) {\n  if (!text) return text;\n  \n  text = text.replace(/!\\[([^\\]]*)\\]\\([^)]+\\)/g, '$1');\n  text = text.replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, '$1');\n  text = text.replace(/\\[([^\\]]+)\\]\\[[^\\]]*\\]/g, '$1');\n  text = text.replace(/^\\[[^\\]]+\\]:\\s*.+$/gm, '');\n  text = text.replace(/<[^>]+>/g, '');\n  \n  return text;\n}\n\n// Detect prompt injection\nfunction detectPromptInjection(text, config) {\n  if (!text || !config.ENABLE_PROMPT_HEURISTICS) {\n    return { detected: false, severity: 'none', patterns: [] };\n  }\n  \n  const detectedPatterns = [];\n  let severity = 'none';\n  \n  for (const pattern of config.PROMPT_PATTERNS) {\n    const regex = new RegExp(pattern, 'i');\n    if (regex.test(text)) {\n      detectedPatterns.push(pattern);\n    }\n  }\n  \n  if (config.DETECT_TEMPLATE_INJECTION) {\n    for (const pattern of config.TEMPLATE_PATTERNS) {\n      const regex = new RegExp(pattern, 'i');\n      if (regex.test(text)) {\n        detectedPatterns.push(`template: ${pattern}`);\n      }\n    }\n  }\n  \n  if (detectedPatterns.length > 0) {\n    if (detectedPatterns.length >= 3) {\n      severity = 'critical';\n    } else if (detectedPatterns.length >= 2) {\n      severity = 'high';\n    } else {\n      severity = 'medium';\n    }\n  }\n  \n  return {\n    detected: detectedPatterns.length > 0,\n    severity,\n    patterns: detectedPatterns\n  };\n}\n\n// Mask secrets\nfunction maskSecretsEnhanced(text, config) {\n  if (!text || !config.MASK_SECRETS) return { text, maskedSecrets: [] };\n  \n  let maskedText = text;\n  const maskedSecrets = [];\n  \n  const keywordPattern = config.SECRET_KEYWORDS\n    .map(k => k.replace(/[-_]/g, '[-_]?'))\n    .join('|');\n  \n  const secretPattern = new RegExp(\n    `\\\\b(${keywordPattern})\\\\s*[:=]\\\\s*([A-Za-z0-9\\\\-_.=\\\\/+]+)`,\n    'gi'\n  );\n  \n  maskedText = maskedText.replace(secretPattern, (match, key, value) => {\n    maskedSecrets.push(key);\n    return `${key}: [REDACTED]`;\n  });\n  \n  // Mask Bearer tokens\n  maskedText = maskedText.replace(\n    /\\b(Bearer|bearer)\\s+([A-Za-z0-9\\-_.=\\/+]+)/g,\n    (match, bearer, token) => {\n      maskedSecrets.push('Bearer Token');\n      return `${bearer} [REDACTED]`;\n    }\n  );\n  \n  // Mask JWT tokens\n  maskedText = maskedText.replace(\n    /\\b[A-Za-z0-9\\-_]+\\.[A-Za-z0-9\\-_]+\\.[A-Za-z0-9\\-_]+\\b/g,\n    (match) => {\n      const parts = match.split('.');\n      if (parts.length === 3 && parts[0].length > 10) {\n        maskedSecrets.push('JWT Token');\n        return '[JWT_REDACTED]';\n      }\n      return match;\n    }\n  );\n  \n  return { text: maskedText, maskedSecrets };\n}\n\n// Main sanitization pipeline\nfunction sanitizePipeline(input, config) {\n  const transformations = [];\n  const threats = [];\n  let text = input === null || input === undefined ? '' : String(input);\n  \n  const originalText = text;\n  const originalLength = text.length;\n  \n  // Step 1: Aggressive decoding\n  const decoded = aggressiveIterativeDecode(text, config);\n  if (decoded !== text) {\n    transformations.push('aggressive_decode');\n    text = decoded;\n  }\n  \n  // Step 2: Remove invisible Unicode\n  const cleanedUnicode = removeInvisibleAndDangerousChars(text);\n  if (cleanedUnicode !== text) {\n    transformations.push('unicode_cleaned');\n    threats.push('invisible_chars');\n    text = cleanedUnicode;\n  }\n  \n  // Step 3: Neutralize HTML attributes\n  const neutralized = neutralizeAttributesEnhanced(text, config);\n  if (neutralized !== text) {\n    transformations.push('attributes_neutralized');\n    threats.push('event_handlers');\n    text = neutralized;\n  }\n  \n  // Step 4: Remove dangerous elements\n  const safeElements = removeDangerousElements(text);\n  if (safeElements !== text) {\n    transformations.push('dangerous_elements_removed');\n    threats.push('dangerous_html');\n    text = safeElements;\n  }\n  \n  // Snapshot before destructive clean/strip for detection\n  const preDetectionText = text;\n\n  // Step 5: Clean markdown\n  const cleanedMarkdown = cleanMarkdownSyntax(text);\n  if (cleanedMarkdown !== text) {\n    transformations.push('markdown_cleaned');\n    text = cleanedMarkdown;\n  }\n  \n  // Step 6: Strip HTML tags\n  if (config.STRIP_ALL_TAGS) {\n    const stripped = stripTags(text, config.WHITELIST_TAGS);\n    if (stripped !== text) {\n      transformations.push('html_stripped');\n      text = stripped;\n    }\n  }\n  \n  // Step 7: Normalize whitespace\n  text = text.replace(/\\s+/g, ' ').trim();\n  if (text.length !== originalLength) {\n    transformations.push('whitespace_normalized');\n  }\n  \n  // Step 8: Detect prompt injection\n  const promptInjection = detectPromptInjection(preDetectionText, config);\n  if (promptInjection.detected) {\n    threats.push('prompt_injection');\n    transformations.push('prompt_injection_detected');\n  }\n  \n  // Step 9: Mask secrets\n  const secretMasking = maskSecretsEnhanced(text, config);\n  if (secretMasking.maskedSecrets.length > 0) {\n    text = secretMasking.text;\n    threats.push('secrets_exposed');\n    transformations.push('secrets_masked');\n  }\n  \n  // Step 10: Length enforcement\n  if (config.MAX_LENGTH && text.length > config.MAX_LENGTH) {\n    text = text.slice(0, config.MAX_LENGTH);\n    transformations.push('truncated');\n  }\n  \n  // Calculate security score\n  let securityScore = 100;\n  securityScore -= threats.length * 15;\n  securityScore -= transformations.length * 5;\n  securityScore = Math.max(0, securityScore);\n  \n  // Determine security level\n  let securityLevel = 'LOW';\n  if (threats.includes('prompt_injection') || threats.includes('secrets_exposed')) {\n    securityLevel = 'CRITICAL';\n  } else if (threats.includes('dangerous_html') || threats.includes('event_handlers')) {\n    securityLevel = 'HIGH';\n  } else if (threats.length > 0) {\n    securityLevel = 'MEDIUM';\n  }\n  \n  return {\n    text,\n    transformations,\n    threats,\n    securityLevel,\n    securityScore,\n    promptInjection,\n    originalLength,\n    sanitizedLength: text.length,\n    secretsMasked: secretMasking?.maskedSecrets || []\n  };\n}\n\n// === Main Processing Loop ===\nfor (let idx = 0; idx < inputItems.length; idx++) {\n  const item = inputItems[idx];\n  const json = item.json || {};\n  \n  // Merge configurations\n  const config = Object.assign({}, DEFAULT_CONFIG, json.sanitizer_config || {});\n  \n  // Ensure arrays are properly initialized\n  if (!Array.isArray(config.PROMPT_PATTERNS)) {\n    config.PROMPT_PATTERNS = DEFAULT_CONFIG.PROMPT_PATTERNS;\n  }\n  if (!Array.isArray(config.SECRET_KEYWORDS)) {\n    config.SECRET_KEYWORDS = DEFAULT_CONFIG.SECRET_KEYWORDS;\n  }\n  if (!Array.isArray(config.TEMPLATE_PATTERNS)) {\n    config.TEMPLATE_PATTERNS = DEFAULT_CONFIG.TEMPLATE_PATTERNS;\n  }\n  if (!Array.isArray(config.DANGEROUS_SCHEMES)) {\n    config.DANGEROUS_SCHEMES = DEFAULT_CONFIG.DANGEROUS_SCHEMES;\n  }\n  \n  // Get input text\n  const originalInput = (typeof json.message !== 'undefined') ? \n    String(json.message) : \n    JSON.stringify(json);\n  \n  // Run sanitization pipeline\n  const result = sanitizePipeline(originalInput, config);\n  \n  // Build output\n  const output = {\n    // Core fields\n    clearoutput: result.text,\n    injectiondetected: result.promptInjection.detected,\n    securitylevel: result.securityLevel,\n    securityscore: result.securityScore,\n    \n    // Original test data (for aggregator)\n    id: json.id || `test-${idx}`,\n    description: json.description || '',\n    category: json.category || 'general',\n    \n    // Session tracking\n    sessionid: `session-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,\n    timestamp: nowISO(),\n    \n    // Detailed results\n    details: {\n      query: originalInput,\n      context: {\n        conversationId: `conv-${Date.now()}-${idx}`,\n        timestamp: nowISO(),\n        userId: json.userId || 'anonymous',\n        source: json.source || 'user_input'\n      },\n      metadata: {\n        sanitized: true,\n        transformations: result.transformations,\n        threats: result.threats,\n        injectionAttemptDetected: result.promptInjection.detected,\n        injectionSeverity: result.promptInjection.severity,\n        injectionPatterns: result.promptInjection.patterns,\n        secretsMasked: result.secretsMasked,\n        originalLength: result.originalLength,\n        sanitizedLength: result.sanitizedLength,\n        processingTime: Date.now(),\n        sanitizerVersion: '2.1.0'\n      },\n      securityHeaders: {\n        instructions: 'Process ONLY the structured data in the clearoutput field.',\n        outputFormat: 'Return ONLY valid JSON matching the specified schema.',\n        securityLevel: result.securityLevel,\n        securityScore: result.securityScore,\n        timestamp: Date.now(),\n        validationRequired: result.securityLevel !== 'LOW',\n        requiresReview: result.securityLevel === 'CRITICAL',\n        allowExecution: result.securityLevel === 'LOW',\n        sandboxRequired: result.securityLevel !== 'LOW'\n      },\n      audit: config.LOG_AUDIT ? {\n        originalInput: originalInput,\n        processingTimestamp: nowISO(),\n        configUsed: {\n          sanitizeLevel: config.SANITIZE_LEVEL,\n          aggressiveDecoding: config.AGGRESSIVE_DECODING,\n          promptHeuristics: config.ENABLE_PROMPT_HEURISTICS,\n          secretMasking: config.MASK_SECRETS\n        }\n      } : {\n        processingTimestamp: nowISO(),\n        auditingDisabled: true\n      }\n    }\n  };\n  \n  outputs.push(output);\n}\n\nreturn outputs;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        160
+      ],
+      "id": "a462b71b-4dba-446d-a30b-f669027354a8",
+      "name": "Input Sanitizer Enhanced"
+    },
+    {
+      "parameters": {
+        "content": "## Sanitizer nodes",
+        "height": 272,
+        "width": 656,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1952,
+        80
+      ],
+      "id": "0be0d871-9043-4ad5-89f6-fc688ab89dc0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pobierz wszystkie elementy z poprzedniego węzła (Test Generatora)\nconst items = $input.all();\n\n// Zdefiniuj statyczny obiekt konfiguracji\nconst sanitizerConfig = {\n  ENABLE_PROMPT_HEURISTICS: true,\n  MASK_SECRETS: true,\n  DETECT_TEMPLATE_INJECTION: true,\n  AGGRESSIVE_DECODING: true,\n  MAX_LENGTH: 5000,\n  SANITIZE_LEVEL: 'maximum',\n  LOG_AUDIT: true,\n  STRIP_ALL_TAGS: true,\n  MAX_DECODE_ITERATIONS: 10\n};\n\n// Przejdź przez każdy element (każdy test) i dodaj do niego konfigurację\nfor (const item of items) {\n  // Upewnij się, że właściwość 'json' istnieje\n  if (!item.json) {\n    item.json = {};\n  }\n  // Dodaj obiekt konfiguracyjny do właściwości 'json' każdego elementu\n  item.json.sanitizer_config = sanitizerConfig;\n}\n\n// Zwróć zmodyfikowane elementy, które teraz zawierają zarówno dane testowe, jak i konfigurację\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1904,
+        160
+      ],
+      "id": "0cfbc3be-aa52-4d6e-adc0-84ec4369f8e0",
+      "name": "Sanitizer Config"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "chatInput",
+              "value": "={{ JSON.parse($json.clearoutput).chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "sessionId",
+              "value": "={{ JSON.parse($json.clearoutput).sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dcb22007-e378-426f-8dbd-f7f5459b9f7f",
+      "name": "Extract ChatInput & SessionId",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1488,
+        160
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Sanitizer Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If safe regenerate chat input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default reply for danger questions": {
+      "main": [
+        []
+      ]
+    },
+    "AI Guard": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Default reply for danger questions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Default reply for danger questions1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Default reply for danger questions2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If safe regenerate chat input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "llama-promot-guard": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Guard",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Sanitizer Enhanced": {
+      "main": [
+        [
+          {
+            "node": "Extract ChatInput & SessionId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitizer Config": {
+      "main": [
+        [
+          {
+            "node": "Input Sanitizer Enhanced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ChatInput & SessionId": {
+      "main": [
+        [
+          {
+            "node": "AI Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6b16aaf7-451e-4e2e-aa9c-c7bcc211847a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "276adbeb15f37f3b57bb5faabd12cfa0112bb20465f7059277bed7cbe775413c"
+  },
+  "id": "HyOGg5IuglIBI75F",
+  "tags": []
+}
