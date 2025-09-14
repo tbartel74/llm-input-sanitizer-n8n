@@ -39,10 +39,17 @@ interactions with Large Language Models (LLMs).
 
 ```text
 .
-├── n8n/workflows/sanitizer.workflow.json
-├── docs/index.md
-├── examples/
-└── .github/workflows/ci.yml
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── docs/
+│   └── index.md
+├── n8n/
+│   └── workflows/
+│       └── sanitizer.workflow.json
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
 
 ---
