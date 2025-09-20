@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2024-09-XX
 
-### Added
+### New Features
 
 - Sequential sanitizer pipeline with 10-stage processing
 - Enhanced test generator with 50+ adversarial examples
@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2024-09-XX
 
-### Added
+### Initial Features
 
 - Basic input sanitization workflow
 - Initial prompt injection detection
@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic test framework
 - Documentation and examples
 
-### Security
+### Initial Security
 
 - Initial protection against common prompt injection
 - Basic Unicode normalization
