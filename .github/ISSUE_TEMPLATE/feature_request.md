@@ -17,7 +17,7 @@ A clear and concise description of what you want to happen.
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
 
-**Use case**
+## Use case
 
 Describe the specific use case or scenario where this feature would be helpful:
 
@@ -25,7 +25,7 @@ Describe the specific use case or scenario where this feature would be helpful:
 - What integrations would benefit?
 - What scale/volume considerations?
 
-**Proposed implementation**
+## Proposed implementation
 
 If you have ideas about how this could be implemented:
 
@@ -37,7 +37,7 @@ If you have ideas about how this could be implemented:
 - [ ] Integration example
 - [ ] Other: ___________
 
-**Security considerations**
+## Security considerations
 
 - Does this feature address a new attack vector?
 - Could this feature introduce false positives?
@@ -45,14 +45,17 @@ If you have ideas about how this could be implemented:
 - Are there privacy implications?
 
 **Example inputs/outputs**
+
 If applicable, provide examples of:
 
 **Input that should be detected:**
-```
+
+```text
 Example malicious input here
 ```
 
 **Expected sanitizer behavior:**
+
 ```json
 {
   "clearoutput": "sanitized version",
@@ -63,9 +66,11 @@ Example malicious input here
 ```
 
 **Additional context**
-Add any other context, screenshots, research papers, or examples about the feature request here.
 
-**Priority**
+Add any other context, screenshots, research papers, or examples about
+the feature request here.
+
+## Priority
 
 - [ ] Critical security gap
 - [ ] Important improvement

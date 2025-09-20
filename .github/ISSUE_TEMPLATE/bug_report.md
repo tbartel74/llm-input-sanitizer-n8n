@@ -9,7 +9,7 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+## To Reproduce
 
 Steps to reproduce the behavior:
 
@@ -24,7 +24,7 @@ A clear and concise description of what you expected to happen.
 **Actual behavior**
 What actually happened, including error messages or unexpected output.
 
-**Input and Output**
+## Input and Output
 
 Please provide:
 
