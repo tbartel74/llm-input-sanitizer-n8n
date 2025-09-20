@@ -2,7 +2,11 @@
 
 ## 1. Introduction
 
-This document describes an advanced n8n workflow designed to secure prompts and other user-supplied text before they are forwarded to a Large Language Model (LLM). The design follows a defense-in-depth approach: a sequence of canonicalization, detection, and sanitization stages that together reduce the risk of prompt injection, obfuscation, and accidental secrets disclosure.
+This document describes an advanced n8n workflow designed to secure prompts
+and other user-supplied text before they are forwarded to a Large Language
+Model (LLM). The design follows a defense-in-depth approach: a sequence of
+canonicalization, detection, and sanitization stages that together reduce the
+risk of prompt injection, obfuscation, and accidental secrets disclosure.
 
 The workflow is intended for:
 
@@ -10,20 +14,42 @@ The workflow is intended for:
 * runtime protection in production LLM pipelines,
 * auditability and observability (rich metadata and replacement logs).
 
-The solution is based on a defense-in-depth strategy, where each sanitation layer is responsible for neutralizing a different attack vector. The workflow has been designed with modularity and test automation in mind, allowing for continuous verification of its effectiveness and easy future expansion.
+The solution is based on a defense-in-depth strategy, where each sanitation
+layer is responsible for neutralizing a different attack vector. The workflow
+has been designed with modularity and test automation in mind, allowing for
+continuous verification of its effectiveness and easy future expansion.
 
 ## 2. Workflow Architecture
 
-The pipeline is implemented as a linear sequence of code nodes in n8n. Each node enriches the item payload (`item.json`) with structured metadata that downstream nodes use for detection, scoring, and auditing.
+The pipeline is implemented as a linear sequence of code nodes in n8n. Each
+node enriches the item payload (`item.json`) with structured metadata that
+downstream nodes use for detection, scoring, and auditing.
 
-The system consists of ten key nodes that form a complete data testing and security pipeline:
+The system consists of ten key nodes that form a complete data testing and
+security pipeline:
 
-1. **Test Generator Enhanced:** Generates a broad set of adversarial and benign test cases (fragmentation, zero-width characters, homoglyphs, comment injection, templating, encoded payloads). Output items include `testId`, `expected`, `chatInput`, `inputText`.
-2. **Enhanced Sanitizer Config:** Attaches `sanitizer_config` (thresholds, feature toggles, processing limits, logging flags) to every item so behavior is configurable without code changes.
-3. **Input Validation:** Quick heuristics and fast checks: emptiness, max length enforcement, simple "safe pattern" matching, quick threat substrings, suspicious Unicode detection. Produces `validation` metadata including `skipAdvanced` hint.
-4. **Unicode Normalization:** Unescape `\uXXXX` sequences, run NFKC unicode normalization (where available), remove zero-width and BOM characters, and replace common homoglyphs (small configurable map). Produces `normalization.normalized`.
-5. **Fast Pattern Detection:** Lightweight regex checks for obvious jailbreak phrases (e.g., "ignore previous instructions", "reveal system prompt"). Produces `fastDetection.score` and `matches`.
-6. **Advanced Pattern Detection:** Fragmentation-tolerant and context-rich detectors: zero-width detection, literal escape detection, comment injection detection, chat-template tokens, aggressive fragmentation regexes. Aggregates `advancedDetection.matches` and computes `threatScore`.
+1. **Test Generator Enhanced:** Generates a broad set of adversarial and
+   benign test cases (fragmentation, zero-width characters, homoglyphs,
+   comment injection, templating, encoded payloads). Output items include
+   `testId`, `expected`, `chatInput`, `inputText`.
+2. **Enhanced Sanitizer Config:** Attaches `sanitizer_config` (thresholds,
+   feature toggles, processing limits, logging flags) to every item so
+   behavior is configurable without code changes.
+3. **Input Validation:** Quick heuristics and fast checks: emptiness, max
+   length enforcement, simple "safe pattern" matching, quick threat
+   substrings, suspicious Unicode detection. Produces `validation` metadata
+   including `skipAdvanced` hint.
+4. **Unicode Normalization:** Unescape `\uXXXX` sequences, run NFKC unicode
+   normalization (where available), remove zero-width and BOM characters, and
+   replace common homoglyphs (small configurable map). Produces
+   `normalization.normalized`.
+5. **Fast Pattern Detection:** Lightweight regex checks for obvious jailbreak
+   phrases (e.g., "ignore previous instructions", "reveal system prompt").
+   Produces `fastDetection.score` and `matches`.
+6. **Advanced Pattern Detection:** Fragmentation-tolerant and context-rich
+   detectors: zero-width detection, literal escape detection, comment
+   injection detection, chat-template tokens, aggressive fragmentation
+   regexes. Aggregates `advancedDetection.matches` and computes `threatScore`.
 7. **Threat Scoring & Classification:** Normalizes detection outputs into a canonical `result` object: `{ detected, score, severity, labels, reason }`. Uses thresholds from `sanitizer_config`.
 8. **Content Sanitization:** Applies concrete transformations: remove zero-width chars, unescape literal escapes, de-fragment sensitive phrases and replace them with placeholders (e.g., `[filtered:ignore_instructions]`), neutralize comment payloads and unsafe attributes/constructs. Produces `clearoutput` and `details.audit.sanitization`.
 9. **Test Results Aggregator:** Compares `expected` vs `detected` across tests and computes confusion matrix (TP/FP/FN/TN), `precision`, `recall`, `f1`, `accuracy`, and per-test diagnostics.
