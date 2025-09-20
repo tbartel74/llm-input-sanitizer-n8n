@@ -51,37 +51,45 @@ A clear description of the security issue and how it bypasses the sanitizer.
 
 **Expected behavior:**
 The sanitizer should have:
+
 - [ ] Detected the injection attempt
 - [ ] Flagged with HIGH/CRITICAL security level
 - [ ] Applied appropriate sanitization
 - [ ] Triggered specific detection labels
 
-**Attack technique**
+## Attack technique
+
 Describe the technique used:
+
 - Fragmentation method
 - Encoding/obfuscation approach
 - Unicode characters exploited
 - Comment/delimiter strategy
 - Other evasion technique
 
-**Impact assessment**
+## Impact assessment
+
 - Could this be used to compromise LLM systems?
 - What type of malicious actions could result?
 - Are there mitigating factors?
 
-**Suggested fix**
+## Suggested fix
+
 If you have ideas for how to address this:
+
 - Pattern updates needed
 - Detection logic improvements
 - Configuration changes
 - New validation rules
 
-**Environment**
+## Environment
+
 - **Workflow version**: [e.g. v0.2]
 - **Configuration**: [any custom settings that might affect detection]
 - **Testing method**: [how you discovered this]
 
-**Responsible disclosure**
+## Responsible disclosure
+
 - [ ] I understand this issue will be publicly visible
 - [ ] I have not disclosed this vulnerability elsewhere
 - [ ] I am willing to work with maintainers on a fix
