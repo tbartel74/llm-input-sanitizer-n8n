@@ -113,36 +113,36 @@ The sanitizer's multi-stage pipeline processes each prompt sequentially through 
 
 ### 3.2. Mitigated Threats and Defensive Techniques
 
-Below is a detailed discussion of the threats the sanitizer protects against and the defensive techniques implemented.
+Below is a detailed discussion of the threats the sanitizer protects against
+and the defensive techniques implemented.
 
 #### **Technique 1: Aggressive Iterative Decoding**
 
 * **What is it?** Double / multi-encoded payloads (URL-encoded, HTML
-  entities, `\uXXXX`, `\xHH`). This is a process of repeatedly decoding
-  input data that may have been intentionally encoded (obfuscated) to
-  bypass simple security filters.
+  entities, `\uXXXX`, `\xHH`). This is a process of repeatedly decoding input
+  data that may have been intentionally encoded (obfuscated) to bypass simple
+  security filters.
 * **How is it used in attacks?** Attackers encode payloads repeatedly so
   simple one-pass decoders miss the true malicious content. An attacker
-  encodes a malicious payload (e.g., JavaScript) one or more times,
-  hoping that the security system will only analyze the data in its raw,
-  encoded form.
-* **How does the sanitizer prevent it?** Iteratively decode until stable
-  or hitting a configured iteration cap; then continue detection on fully
+  encodes a malicious payload (e.g., JavaScript) one or more times, hoping
+  that the security system will only analyze the data in its raw, encoded
+  form.
+* **How does the sanitizer prevent it?** Iteratively decode until stable or
+  hitting a configured iteration cap; then continue detection on fully
   decoded content. The `aggressiveIterativeDecode` function runs a decoding
   loop that continues as long as subsequent iterations produce changes, or
   until a maximum limit is reached.
 
 #### **Technique 2: Unicode Attack Protection**
 
-* **What is it?** Invisible characters or bidirectional overrides that
-  hide or reorder text; script mixing (Cyrillic/Greek/Armenian) to visually
-  mimic Latin letters. This includes specific, often invisible, Unicode
-  characters to hide malicious code or to deceive a user/system.
-* **How is it used in attacks?** Fragment keywords (`j​ a​ v  s‌ c‍ r i p t`)
-  or change rendering order to deceive humans/systems. Zero-width characters
-  can be used to break up keywords to bypass simple filters, and
-  bidirectional (BIDI) override characters can change the visual rendering
-  order of text.
+* **What is it?** Invisible characters or bidirectional overrides that hide
+  or reorder text; script mixing (Cyrillic/Greek/Armenian) to visually mimic
+  Latin letters. This includes specific, often invisible, Unicode characters
+  to hide malicious code or to deceive a user/system.
+* **How is it used in attacks?** Fragment keywords (`j​ a​ v  s‌ c‍ r i p t`) or
+  change rendering order to deceive humans/systems. Zero-width characters can
+  be used to break up keywords to bypass simple filters, and bidirectional
+  (BIDI) override characters can change the visual rendering order of text.
 * **How does the sanitizer prevent it?** Remove zero-width and BOM characters
   early, normalize using NFKC, map common confusables via a configurable
   `HMAP` (extendable with Unicode confusables table), and mark
@@ -154,9 +154,9 @@ Below is a detailed discussion of the threats the sanitizer protects against and
   underscores, control chars) between letters to bypass regexes.
 * **How is it used in attacks?** Turn `ignore` into `i.g.n.o.r.e` or
   `i g n o r e` to dodge simple substring checks.
-* **How does the sanitizer prevent it?** Build fragmentation-tolerant regexes
-  that allow arbitrary non-alphanumeric characters between letters for
-  sensitive keywords; assign weights to matched patterns.
+* **How does the sanitizer prevent it?** Build fragmentation-tolerant
+  regexes that allow arbitrary non-alphanumeric characters between letters
+  for sensitive keywords; assign weights to matched patterns.
 
 #### **Technique 4: Comment Injection & Delimiter Hiding**
 
@@ -166,8 +166,8 @@ Below is a detailed discussion of the threats the sanitizer protects against and
 * **How is it used in attacks?** Put instructions in comments or between
   delimiters to be unearthed by downstream processors or model prompting.
 * **How does the sanitizer prevent it?** Detect comment constructs and
-  remove/neutralize them (or replace with placeholders) and include them in
-  `details.audit` so human reviewers can see the original.
+  remove/neutralize them (or replace with placeholders) and include them
+  in `details.audit` so human reviewers can see the original.
 
 #### **Technique 5: Prompt Injection Detection**
 
@@ -182,10 +182,10 @@ Below is a detailed discussion of the threats the sanitizer protects against and
   (Do Anything Now) mode."
 * **How does the sanitizer prevent it?** Maintain a `PROMPT_PATTERNS` rule
   set. The sanitizer **does not remove** these fragments, as doing so could
-  distort the query. Instead, the `detectPromptInjection` function acts as an
-  **Intrusion Detection System (IDS)**. Matches do not always get removed;
-  instead, the input is flagged (`injectiondetected: true`) and escalated
-  depending on configured policy.
+  distort the query. Instead, the `detectPromptInjection` function acts as
+  an **Intrusion Detection System (IDS)**. Matches do not always get
+  removed; instead, the input is flagged (`injectiondetected: true`) and
+  escalated depending on configured policy.
 
 #### **Technique 6: Cross-Site Scripting (XSS) Protection**
 
@@ -198,9 +198,9 @@ Below is a detailed discussion of the threats the sanitizer protects against and
   schemes, or in embedded objects.
 * **How does the sanitizer prevent it?** If HTML detection is relevant to
   the pipeline, strip dangerous elements, neutralize event attributes, and
-  rewrite unsafe URIs to safe placeholders `#blocked`. The sanitizer applies
-  three layers of defense: removing entire unsafe tags, neutralizing event
-  handler attributes, and blocking unsafe schemes.
+  rewrite unsafe URIs to safe placeholders `#blocked`. The sanitizer
+  applies three layers of defense: removing entire unsafe tags, neutralizing
+  event handler attributes, and blocking unsafe schemes.
 
 #### **Technique 7: Secrets Masking & Data Leakage Prevention**
 
@@ -227,11 +227,10 @@ Below is a detailed discussion of the threats the sanitizer protects against and
 * **How is it used in attacks?** Probe for templating engines and exploit
   evaluation to read server data or execute code. An attacker sends syntax
   characteristic of template engines, e.g., `{{ 7 * 7 }}`.
-* **How does the sanitizer prevent it?** Detect template patterns and
-  treat them as high-risk — escalate according to policy or redact.
-  Similar to prompt injection, the sanitizer acts as a detection system,
-  scanning for patterns and treating detection as a prompt injection
-  attempt.
+* **How does the sanitizer prevent it?** Detect template patterns and treat
+  them as high-risk — escalate according to policy or redact. Similar to
+  prompt injection, the sanitizer acts as a detection system, scanning for
+  patterns and treating detection as a prompt injection attempt.
 
 #### **Technique 9: Semantic Evasion & Future Extensions**
 
@@ -244,14 +243,18 @@ Below is a detailed discussion of the threats the sanitizer protects against and
 
 ## 4. Output Data Structure
 
-The sanitizer returns a structured JSON object that provides the
-application full context for decisions and auditing. The rich JSON object
-provides complete information about the analysis process:
+The sanitizer returns a structured JSON object that provides the application
+full context for decisions and auditing. The rich JSON object provides
+complete information about the analysis process:
 
-* `clearoutput`: Sanitized text safe for LLM consumption (placeholders used for dangerous fragments).
-* `injectiondetected`: Boolean flag indicating whether prompt injection was detected.
-* `securitylevel`: `LOW` | `MEDIUM` | `HIGH` | `CRITICAL` (derived from `threatScore` vs thresholds).
-* `securityscore`: Numerical score (0–100) representing aggregated threat level.
+* `clearoutput`: Sanitized text safe for LLM consumption (placeholders used
+  for dangerous fragments).
+* `injectiondetected`: Boolean flag indicating whether prompt injection was
+  detected.
+* `securitylevel`: `LOW` | `MEDIUM` | `HIGH` | `CRITICAL` (derived from
+  `threatScore` vs thresholds).
+* `securityscore`: Numerical score (0–100) representing aggregated threat
+  level.
 * `result`: Canonical scoring object:
 
 ```json
