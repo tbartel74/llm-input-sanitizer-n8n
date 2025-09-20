@@ -1,9 +1,33 @@
+# Dependencies
 node_modules/
+
+# Environment variables
 .env
 .env.*
+
+# Build outputs
 dist/
 build/
+
+# macOS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDEs
 .vscode/
 .idea/
+
+# n8n
 .n8n/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS generated files
+Thumbs.db
+ehthumbs.db

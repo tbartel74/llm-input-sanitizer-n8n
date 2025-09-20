@@ -1,0 +1,537 @@
+{
+  "name": "AI Agent with LLama-guard-4 (groq) with seq input sanitizer v0.2",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2448,
+        160
+      ],
+      "id": "1f18ae91-8969-4184-888b-afa98c279785",
+      "name": "When chat message received",
+      "webhookId": "6df2feb3-b3ca-47aa-a7b9-8f12d820f735"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bcd2227-9408-4531-9203-7b42cc8fcde8",
+              "name": "resposeText",
+              "value": "Twoje pytanie nie jest bezpieczne i nie mogę udzielić na nie odpowiedzi",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        368
+      ],
+      "id": "8f670bb3-aca1-4ea8-b34b-ff568464407f",
+      "name": "Default reply for danger questions"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        640,
+        144
+      ],
+      "id": "fcc6f3be-3b83-49f4-aa14-1f5fd696fbd8",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "T3S1ZUdBNp27pSuc",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are a helpful assistant."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        -80
+      ],
+      "id": "f5033ad1-e1d0-4ce8-8970-676d1a5787e8",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        144
+      ],
+      "id": "b1bab039-1989-496e-b0af-166c74bfdf4b",
+      "name": "Simple Memory2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "77fdde77-f7f0-404b-94b0-9824f4f9f343",
+              "name": "chatInput",
+              "value": "={{ $('Extract ChatInput & SessionId').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "b3430eef-b36b-4f66-83c5-461d3f116845",
+              "name": "sessionId",
+              "value": "={{ $('Extract ChatInput & SessionId').item.json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -80
+      ],
+      "id": "906ae75e-e6ff-4a32-8876-98561adfd779",
+      "name": "If safe regenerate chat input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d1ea5890-7779-4958-a57e-6249583bc6ce",
+              "leftValue": "={{ $json.result }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        160
+      ],
+      "id": "9221a158-1488-4228-af38-a8ea988d35db",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.all()[0].json.output || '';\nconst cleaned = output.toLowerCase().replace(/\\s/g, '');\n\nif (cleaned.includes('safe') && !cleaned.includes('unsafe')) {\n  return [{ result: true }];\n} else {\n  return [{ result: false }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        160
+      ],
+      "id": "58d03a2e-766d-4a1b-90fd-94fa76065a53",
+      "name": "Convert output into boolean"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        160
+      ],
+      "id": "0437d8b9-8bcf-494a-8a13-8c07500a763a",
+      "name": "AI Guard"
+    },
+    {
+      "parameters": {
+        "content": "## Sanitizer nodes",
+        "height": 272,
+        "width": 1584,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2160,
+        80
+      ],
+      "id": "028c34c6-4727-430d-9d69-dad2ea65529f",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "chatInput",
+              "value": "={{ $json.details.audit.sanitization.sanitizedOutput }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1cb0d5de-b4bb-47c2-a78c-f96dd39c32ec",
+      "name": "Extract ChatInput & SessionId",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -720,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-guard-4-12b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        368
+      ],
+      "id": "a3c7b84f-ac22-4d95-9b9b-5629ac483ec3",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "T3S1ZUdBNp27pSuc",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced Configuration Node v4.1.0 - For Sequential Sanitizer\nconst items = $input.all();\n\n// Define comprehensive sanitizer configuration (safe defaults + retry/backoff/timeouts)\nconst sanitizerConfig = {\n  // Core security features\n  ENABLE_UNICODE_NORMALIZATION: true,\n  ENABLE_HOMOGLYPH_DETECTION: true,\n  ENABLE_TOKEN_FRAGMENTATION_DETECTION: true,\n\n  // Advanced features (disabled by default)\n  ENABLE_EMBEDDING_HOOKS: false,\n  ENABLE_LLM_GATEKEEPER_HOOKS: false,\n\n  // Threat detection thresholds\n  CRITICAL_THRESHOLD: 70,\n  HIGH_THRESHOLD: 40,\n  MEDIUM_THRESHOLD: 20,\n\n  // Processing limits\n  MAX_INPUT_LENGTH: 10000,\n  MAX_PROCESSING_TIME: 5000,\n  MAX_DECODE_ITERATIONS: 10,\n\n  // Retry/backoff defaults for any external IO used by workflow\n  RETRY_ATTEMPTS: 3,\n  RETRY_BACKOFF_MS: 500,\n  RETRY_BACKOFF_FACTOR: 2,\n  HANDLE_429_RETRY: true,\n  DEFAULT_TIMEOUT_MS: 10000,\n\n  // Output configuration\n  STRICT_OUTPUT_MODE: true,\n  SANITIZE_LEVEL: 'maximum',\n\n  // Audit and logging\n  ENABLE_AUDIT_LOGGING: true,\n  INCLUDE_RAW_MATCHES: true,\n  LOG_AUDIT: true\n};\n\n// Process each item and add configuration\nfor (const item of items) {\n  if (!item.json) {\n    item.json = {};\n  }\n\n  item.json.sanitizer_config = sanitizerConfig;\n  item.json.config_version = '4.1.0';\n  item.json.config_timestamp = new Date().toISOString();\n  item.json.features_enabled = {\n    unicode_normalization: sanitizerConfig.ENABLE_UNICODE_NORMALIZATION,\n    homoglyph_detection: sanitizerConfig.ENABLE_HOMOGLYPH_DETECTION,\n    token_fragmentation: sanitizerConfig.ENABLE_TOKEN_FRAGMENTATION_DETECTION,\n    sequential_processing: true\n  };\n}\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2112,
+        160
+      ],
+      "id": "eb45c8b3-cb85-49c4-81d3-b409c85ac502",
+      "name": "Enhanced Sanitizer Config"
+    },
+    {
+      "parameters": {
+        "jsCode": "// INPUT VALIDATION (robust)\nconst items = $input.all();\nconst out = [];\n\nfor (const inputItem of items) {\n  try {\n    const json = inputItem.json || {};\n    const inputText = (json.message || json.input || json.text || '').toString();\n    const start = Date.now();\n\n    const result = {\n      originalInput: inputText,\n      length: inputText.length,\n      isEmpty: !inputText.trim(),\n      isSafe: false,\n      skipAdvanced: false,\n      hasQuickThreats: false,\n      suspiciousUnicode: false,\n      processingTime: 0\n    };\n\n    if (result.isEmpty) {\n      result.isSafe = true;\n      result.skipAdvanced = true;\n    }\n\n    if (result.length > (json.sanitizer_config?.MAX_INPUT_LENGTH || 10000)) {\n      result.originalInput = inputText.slice(0, json.sanitizer_config?.MAX_INPUT_LENGTH || 10000);\n      result.length = result.originalInput.length;\n    }\n\n    const safePatterns = [/^(what|how|when|where|who|why)\\\\b/i, /^(can you|could you|please)\\\\s+(help|write|create)/i, /^(thank you|thanks)\\\\b/i];\n    result.matchesSafePattern = safePatterns.some(p => p.test(inputText));\n\n    const quickThreats = ['ignore', 'system:', 'assistant:', 'jailbreak', 'bypass', 'reveal', 'show me'];\n    result.hasQuickThreats = quickThreats.some(t => inputText.toLowerCase().includes(t));\n\n    const suspiciousUnicode = /[\\\\u0400-\\\\u04FF\\\\u0370-\\\\u03FF\\\\uFF00-\\\\uFFEF\\\\u200B-\\\\u200D]/.test(inputText);\n    result.suspiciousUnicode = suspiciousUnicode;\n\n    // Skip advanced only if safe AND no quickThreats AND no suspiciousUnicode\n    result.skipAdvanced = result.matchesSafePattern && !result.hasQuickThreats && !result.suspiciousUnicode;\n\n    result.processingTime = Date.now() - start;\n    out.push({ json: { ...(json || {}), validation: result } });\n  } catch (err) {\n    out.push({ json: { __error: err && err.message ? err.message : String(err) } });\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1904,
+        160
+      ],
+      "id": "33b5ec93-8eb5-4875-aff3-6393cb865fd7",
+      "name": "1. Input Validation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// UNICODE NORMALIZATION + UNESCAPE \\uXXXX + HOMOGLYPH DEOBFUSCATION\nconst items = $input.all();\n\n// small homoglyph map (extendable)\nconst HMAP = {\n  '\\u0438':'i','\\u0456':'i','\\u0441':'s','\\u03B1':'a','\\u03C1':'p',\n  '\\uff41':'a','\\uff49':'i','\\uff53':'s'\n};\n\n// unescape \\uXXXX sequences -> real unicode character\nfunction unescapeUnicodeEscapes(s){\n  if(!s || typeof s !== 'string') return s;\n  return s.replace(/\\\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));\n}\n\nfunction normalizeText(t){\n  if(!t) return { normalized:'', changes:[], homoglyphsDetected:false };\n  // First: unescape literal \\uXXXX sequences that may be present in tests\n  let n = unescapeUnicodeEscapes(String(t));\n  // NFKC normalization if available\n  if (typeof n.normalize === 'function') n = n.normalize('NFKC');\n  // remove zero-width and BOM\n  n = n.replace(/[\\\\u200B-\\\\u200D\\\\uFEFF]/g,'');\n  const changes = [];\n  let rebuilt = '';\n  for (const ch of n) {\n    if (HMAP[ch]) { rebuilt += HMAP[ch]; changes.push({from:ch,to:HMAP[ch]}); }\n    else rebuilt += ch;\n  }\n  rebuilt = rebuilt.replace(/\\\\s+/g,' ').trim();\n  return { normalized: rebuilt, changes, homoglyphsDetected: changes.length>0 };\n}\n\nconst out = [];\nfor(const item of items){\n  try {\n    const json = item.json || {};\n    const inputText = json.validation?.originalInput || '';\n    const start = Date.now();\n    const normalization = normalizeText(inputText);\n    item.json = item.json || {};\n    item.json.normalization = { ...normalization, processingTime: Date.now()-start };\n    out.push(item);\n  } catch (err) {\n    out.push({ json: { __error: err && err.message ? err.message : String(err) } });\n  }\n}\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        160
+      ],
+      "id": "b1c2a20f-6de4-4b11-8018-9c07cc3f53a9",
+      "name": "2. Unicode Normalization"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FAST PATTERN DETECTION (lightweight regex checks) - extended social patterns\nconst items = $input.all();\nconst fastPatterns = [\n  /ignore previous instructions/i,\n  /system:/i,\n  /assistant:/i,\n  /(unrestricted|bypass all)/i,\n  /reveal\\\\s+(?:system|prompt|secrets)/i,\n  // new: reveal ... system/prompt anywhere later in sentence\n  /reveal\\\\s+.*\\\\b(system|prompt|secrets|configuration|instructions)\\\\b/i,\n  // social engineering patterns\n  /\\\\b(tell me|please tell me|show me|can you show me|can you tell me)\\\\b.*\\\\b(system|prompt|instructions|configuration|secret|secrets)\\\\b/i,\n  /\\\\b(how are you instructed|how you are instructed|how you were instructed)\\\\b/i\n];\nconst out = [];\n\nfor (const item of items) {\n  try {\n    const json = item.json || {};\n    const txt = (json.normalization?.normalized || json.validation?.originalInput || '').toString();\n    const start = Date.now();\n    const matches = fastPatterns.filter(p => p.test(txt)).map(p => p.toString());\n    item.json = item.json || {};\n    item.json.fastDetection = { score: Math.min(100, matches.length * 30), matches, processingTime: Date.now() - start };\n    out.push(item);\n  } catch (err) {\n    out.push({ json: { __error: err && err.message ? err.message : String(err) } });\n  }\n}\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        160
+      ],
+      "id": "5383ee61-21a4-4045-92d8-71c530357392",
+      "name": "3. Fast Pattern Detection"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Advanced Pattern Detection - full jsCode (debuggable + standard output fields)\n// Paste entire block into node 4 (replace existing jsCode).\n\nconst items = $input.all();\n\n// helper: escape regex metacharacters for safe building\nfunction esc(s) {\n  return s.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&');\n}\n\n// build zero-width regex via fromCharCode (avoid \\u literals)\nfunction buildZeroWidth() {\n  const chars = [String.fromCharCode(0x200B), String.fromCharCode(0x200C), String.fromCharCode(0x200D), String.fromCharCode(0xFEFF)];\n  const joined = chars.map(c => c.replace(/[-\\\\\\]\\^]/g, '\\\\$&')).join('');\n  return new RegExp('[' + joined + ']', 'u');\n}\nconst zeroWidth = buildZeroWidth();\n\n// textual \\uXXXX (backslash-u in text)\nconst literalUnicodeEscape = new RegExp('\\\\\\\\u([0-9A-Fa-f]{4})', 'i');\n\n// fragmentation builder (tolerant)\nfunction frag(word) {\n  const letters = word.split('').map(ch => esc(ch));\n  const joiner = '(?:[\\\\s\\\\W_]*)';\n  return new RegExp(letters.join(joiner), 'iu');\n}\n\n// aggressive fragmentation allowing any non-alnum between letters\nfunction aggressiveFrag(word) {\n  const parts = word.split('').map(ch => esc(ch));\n  const middle = '[^A-Za-z0-9]*';\n  const core = parts.join(middle);\n  const pattern = '(?:^|[^A-Za-z0-9])' + core + '(?:[^A-Za-z0-9]|$)';\n  return new RegExp(pattern, 'i');\n}\n\n// comment pattern built from string (safer)\nconst commentPatternStr = '(\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\/)|(\\\\/\\\\/.*$)|(^|\\\\n|\\\\r)#.*$';\nconst commentRegex = new RegExp(commentPatternStr, 'm');\n\n// detection table (safe RegExp objects)\nconst detectors = [\n  { r: frag('ignore'), weight: 40, id: 'fragmentation_ignore' },\n  { r: aggressiveFrag('ignore'), weight: 50, id: 'aggr_fragment_ignore' },\n  { r: frag('actasystem'), weight: 40, id: 'fragment_actasystem' },\n  { r: aggressiveFrag('actasystem'), weight: 40, id: 'aggr_fragment_actasystem' },\n  { r: new RegExp('i\\\\s*g\\\\s*n\\\\s*o\\\\s*r\\\\s*e', 'i'), weight: 40, id: 'space_ignore' },\n  { r: new RegExp('pre\\\\s*-?\\\\s?vious', 'i'), weight: 25, id: 'previous_frag' },\n  { r: commentRegex, weight: 40, id: 'comment_injection' },\n  { r: literalUnicodeEscape, weight: 40, id: 'literal_unicode_escape' },\n  { r: zeroWidth, weight: 40, id: 'zero_width' },\n  { r: new RegExp('#{3,}'), weight: 40, id: 'delimiter_hash' },\n  { r: new RegExp('-{3,}'), weight: 40, id: 'delimiter_dash' },\n  { r: new RegExp('\\\\*{3,}'), weight: 40, id: 'delimiter_star' },\n  { r: new RegExp('<\\\\|system\\\\||<\\\\|user\\\\||<\\\\|assistant\\\\|', 'i'), weight: 40, id: 'chat_template' },\n  { r: new RegExp('\\\\breveal\\\\b.*\\\\b(system|prompt|secrets|configuration|instructions)\\\\b', 'i'), weight: 40, id: 'reveal_system' },\n  { r: new RegExp('\\\\b(dan\\\\s*mode|developer\\\\s*mode|unrestricted|bypass\\\\s+all)\\\\b', 'i'), weight: 30, id: 'jailbreak' }\n];\n\n// Function: gather candidate text fields into one string (debuggable)\nfunction gatherTextCandidates(json) {\n  const candidates = [];\n  if (json.normalization && typeof json.normalization.normalized === 'string') candidates.push(json.normalization.normalized);\n  if (json.validation && typeof json.validation.originalInput === 'string') candidates.push(json.validation.originalInput);\n  if (json.chatInput && typeof json.chatInput === 'string') candidates.push(json.chatInput);\n  if (json.inputText && typeof json.inputText === 'string') candidates.push(json.inputText);\n  if (json.clearinput && typeof json.clearinput === 'string') candidates.push(json.clearinput);\n  if (json.clearoutput && typeof json.clearoutput === 'string') candidates.push(json.clearoutput);\n  if (json.raw && typeof json.raw === 'string') candidates.push(json.raw);\n  if (json.text && typeof json.text === 'string') candidates.push(json.text);\n  try {\n    for (const k of Object.keys(json)) {\n      const v = json[k];\n      if (typeof v === 'string' && v.length && candidates.indexOf(v) === -1) candidates.push(v);\n    }\n  } catch(e) {}\n  return candidates.join(' \\\\n| ');\n}\n\n// MAIN\nconst out = [];\n\nfor (const item of items) {\n  try {\n    item.json = item.json || {};\n    const json = item.json;\n\n    // collect and expose for debugging\n    const candidateText = gatherTextCandidates(json);\n    item.json.debugTextCandidates = candidateText;\n    item.json.debugFields = {};\n    item.json.debugFields.candidateLength = candidateText.length;\n    const firstSlice = candidateText.slice(0, 120);\n    item.json.debugFields.firstChunk = firstSlice;\n    item.json.debugFields.firstChunkCharCodes = Array.from(firstSlice).map(ch => ch.charCodeAt(0)).slice(0, 60);\n\n    const txt = String(candidateText || '');\n\n    const advanced = { skipped: false, matches: [], score: 0, processingTime: 0, matchedId: null };\n\n    const skip = !!(json.validation && json.validation.skipAdvanced);\n    const force = !!(json.validation && json.validation.suspiciousUnicode) || !!(json.fastDetection && json.fastDetection.score > 0) || !!json.validation?.hasQuickThreats;\n\n    const start = Date.now();\n    if (skip && !force) {\n      advanced.skipped = true;\n    } else {\n      for (const d of detectors) {\n        try {\n          if (d.r && d.r.test && d.r.test(txt)) {\n            advanced.matches.push(d.id);\n            advanced.score += (d.weight || 25);\n            if (!advanced.matchedId) advanced.matchedId = d.id;\n          }\n        } catch (re) {\n          advanced.matches.push('__regex_error:' + (re && re.message ? re.message : String(re)));\n        }\n      }\n    }\n    advanced.processingTime = Date.now() - start;\n    advanced.score = Math.min(100, advanced.score);\n    advanced.detected = advanced.matches.length > 0;\n\n    // Standardized output fields for downstream nodes\n    item.json.advancedDetection = advanced;\n    item.json.threatDetected = !!advanced.detected;\n    item.json.threatScore = advanced.score || 0;\n    item.json.threatMatches = advanced.matches || [];\n    item.json.threatMatchedId = advanced.matchedId || null;\n\n    out.push(item);\n  } catch (err) {\n    out.push({ json: { __error: err && err.message ? err.message : String(err) } });\n  }\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1312,
+        160
+      ],
+      "id": "a4804423-4041-4743-a63a-ee1b0929eb67",
+      "name": "4. Advanced Pattern Detection"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Threat Scoring & Classification - full jsCode\n// Input: items from Advanced Detection/Content Sanitization\n// Output: items with standardized item.json.result = { detected, score, severity, labels, reason }\n\nconst items = $input.all();\n\nfunction safeNumber(v, def=0){\n  if (v === undefined || v === null) return def;\n  const n = Number(v);\n  return Number.isFinite(n) ? n : def;\n}\n\nfor (const item of items){\n  try {\n    item.json = item.json || {};\n    const cfg = item.json.sanitizer_config || item.json.config || {};\n    const CRITICAL_THRESHOLD = safeNumber(cfg.CRITICAL_THRESHOLD, 70);\n    const HIGH_THRESHOLD = safeNumber(cfg.HIGH_THRESHOLD, 40);\n    const MEDIUM_THRESHOLD = safeNumber(cfg.MEDIUM_THRESHOLD, 20);\n\n    // Prefer explicit boolean if present\n    let detected = (typeof item.json.threatDetected === 'boolean') ? item.json.threatDetected : undefined;\n    let score = safeNumber(item.json.threatScore, undefined);\n    // fallback to advancedDetection.score\n    if ((score === undefined || score === 0) && item.json.advancedDetection && typeof item.json.advancedDetection.score === 'number'){\n      score = safeNumber(item.json.advancedDetection.score, 0);\n    }\n    // fallback: if score missing but matches array exists — compute heuristic\n    if ((score === undefined || score === 0) && Array.isArray(item.json.threatMatches) && item.json.threatMatches.length){\n      score = Math.min(100, item.json.threatMatches.length * 30);\n    }\n    // final fallback: 0\n    score = safeNumber(score, 0);\n\n    // Determine detected if not explicitly provided\n    if (detected === undefined){\n      detected = score >= HIGH_THRESHOLD; // treat >=HIGH as detected by default\n    }\n\n    // severity mapping\n    let severity = 'none';\n    if (score >= CRITICAL_THRESHOLD) severity = 'critical';\n    else if (score >= HIGH_THRESHOLD) severity = 'high';\n    else if (score >= MEDIUM_THRESHOLD) severity = 'medium';\n    else if (score > 0) severity = 'low';\n\n    // labels (copy matches with safe normalization)\n    const labels = Array.isArray(item.json.threatMatches) ? item.json.threatMatches.slice(0) : (item.json.advancedDetection && Array.isArray(item.json.advancedDetection.matches) ? item.json.advancedDetection.matches.slice(0) : []);\n\n    // flaggedByScoreThreshold: true if score >= CRITICAL_THRESHOLD (configurable)\n    const flaggedByScoreThreshold = score >= CRITICAL_THRESHOLD;\n    // flaggedByScoring: an additional heuristic if severity is at least medium\n    const flaggedByScoring = (severity === 'critical' || severity === 'high' || severity === 'medium');\n\n    // Provide canonical result object for aggregator\n    item.json.result = {\n      detected: !!detected,\n      score: score,\n      severity: severity,\n      labels: labels,\n      flaggedByScoreThreshold: !!flaggedByScoreThreshold,\n      flaggedByScoring: !!flaggedByScoring,\n      reason: item.json.threatMatchedId || (labels[0] || null)\n    };\n\n    // keep backward compat fields\n    item.json.threatDetected = !!item.json.result.detected;\n    item.json.threatScore = item.json.result.score;\n\n  } catch (err) {\n    item.json = item.json || {};\n    item.json.result = item.json.result || {};\n    item.json.result.error = err && err.message ? err.message : String(err);\n  }\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        160
+      ],
+      "id": "6993113e-411d-45ab-8913-2155ac2a809a",
+      "name": "5. Threat Scoring & Classification"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Content Sanitization (extended) - full jsCode\n// Paste entire block into node 6 (replace existing jsCode).\n\nconst items = $input.all();\n\nfunction escapeForRegex(s){ return s.replace(/[-\\/\\\\^$*+?.()|[\\]{}]/g, '\\\\$&'); }\n\n// build zero-width regex via fromCharCode (avoid \\u literals)\nfunction buildZeroWidthRegex(){\n  const chars=[String.fromCharCode(0x200B),String.fromCharCode(0x200C),String.fromCharCode(0x200D),String.fromCharCode(0xFEFF)];\n  const joined = chars.map(c => c.replace(/[-\\\\\\]\\^]/g,'\\\\$&')).join('');\n  return new RegExp('['+joined+']','u');\n}\nconst zeroWidthClass = buildZeroWidthRegex();\n\n// literal \\uXXXX in text\nconst literalUnicodeEscape = new RegExp('\\\\\\\\u([0-9A-Fa-f]{4})','gi');\n\nfunction fragmentationRegexForWord(word){\n  const letters = word.split('').map(ch => escapeForRegex(ch));\n  const joiner = '(?:[\\\\\\\\s\\\\\\\\W_]*)';\n  const pattern = '\\\\b' + letters.join(joiner) + '\\\\b';\n  return new RegExp(pattern,'iu');\n}\n\nconst fragMap = [\n  { id:'ignore_instructions', words:['ignore previous instructions','ignore'], placeholder:'[filtered:ignore_instructions]' },\n  { id:'act_as_system', words:['act as system','actasystem','act as system'], placeholder:'[filtered:act_as_system]' }\n];\n\nconst commentPatternStr = '(\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\/)|(\\\\/\\\\/.*$)|(^|\\\\n|\\\\r)#.*$';\nconst commentRegex = new RegExp(commentPatternStr,'gim');\n\nconst patternToPlaceholder = [\n  { id:'system_prompt', regex:new RegExp('(^|\\\\s)system:','gi'), placeholder:'[filtered:system_prompt]' },\n  { id:'reveal_terms', regex:new RegExp('\\\\breveal\\\\s+(?:system|prompt|secrets|configuration|instructions)\\\\b','gi'), placeholder:'[filtered:reveal_terms]' },\n  { id:'jailbreak', regex:new RegExp('\\\\b(?:dan\\\\s?mode|developer\\\\s?mode|unrestricted|bypass\\\\s+all)\\\\b','gi'), placeholder:'[filtered:jailbreak_terms]' }\n];\n\nfor (const item of items){\n  try{\n    item.json = item.json || {};\n    // --- primary source selection: prefer normalized, then validation.originalInput, then chatInput/inputText/clearinput\n    const srcCandidates = [\n      (item.json.normalization && item.json.normalization.normalized) || '',\n      (item.json.validation && item.json.validation.originalInput) || '',\n      item.json.chatInput || '',\n      item.json.inputText || '',\n      item.json.clearinput || '',\n      item.json.clearoutput || ''\n    ];\n    const primary = srcCandidates.find(s=>s && String(s).trim().length>0) || '';\n    let outText = String(primary || '');\n\n    // If primary empty but chatInput/inputText present, copy into validation.originalInput\n    if(!outText && item.json.chatInput){ outText = String(item.json.chatInput); item.json.validation = item.json.validation||{}; item.json.validation.originalInput = outText; }\n    if(!outText && item.json.inputText){ outText = String(item.json.inputText); item.json.validation = item.json.validation||{}; item.json.validation.originalInput = outText; }\n\n    const replacements = [];\n\n    // 1) Remove zero-width characters early\n    const beforeZW = outText;\n    outText = outText.replace(zeroWidthClass, '');\n    if (beforeZW !== outText) replacements.push({ originalPattern: 'zero_width_chars', replacement: '[filtered:zero_width_removed]' });\n\n    // 2) Handle textual \\uXXXX sequences: attempt to unescape to real char\n    const literalMatches = [];\n    outText = outText.replace(literalUnicodeEscape, (m, g1) => {\n      literalMatches.push(g1);\n      try {\n        return String.fromCharCode(parseInt(g1, 16));\n      } catch (e) {\n        return m;\n      }\n    });\n    if (literalMatches.length) {\n      replacements.push({ originalPattern: 'literal_unicode_escape', replacement: '[filtered:literal_unicode_unescaped]' });\n    }\n\n    // 3) De-fragmentation for known sensitive phrases\n    for (const fm of fragMap) {\n      for (const w of fm.words) {\n        const fragRe = fragmentationRegexForWord(w);\n        const before = outText;\n        outText = outText.replace(fragRe, fm.placeholder);\n        if (before !== outText) replacements.push({ originalPattern: fm.id, replacement: fm.placeholder });\n      }\n    }\n\n    // 4) Generic replacements (system/reveal/jailbreak)\n    for (const p of patternToPlaceholder) {\n      const before = outText;\n      outText = outText.replace(p.regex, p.placeholder);\n      if (before !== outText) replacements.push({ originalPattern: p.id, replacement: p.placeholder });\n    }\n\n    // 5) Remove/mark comment-style injections using compiled commentRegex\n    const beforeComments = outText;\n    outText = outText.replace(commentRegex, '[filtered:comment_injection]');\n    if (beforeComments !== outText) replacements.push({ originalPattern: 'comment_injection', replacement: '[filtered:comment_injection]' });\n\n    // ensure normalization.originalInput/normalized are set for downstream\n    item.json.validation = item.json.validation || {};\n    item.json.normalization = item.json.normalization || {};\n    if(!item.json.validation.originalInput || String(item.json.validation.originalInput).trim()===''){\n      item.json.validation.originalInput = primary || (item.json.chatInput||item.json.inputText||'');\n    }\n    item.json.normalization.normalized = outText;\n\n    item.json.details = item.json.details || {};\n    item.json.details.audit = item.json.details.audit || {};\n    item.json.details.audit.sanitization = { sanitizedOutput: outText, replacements, processingTime: 0 };\n\n    item.json.clearoutput = outText;\n    item.json.injectiondetected = (replacements.length > 0) || (outText.indexOf('[filtered:') !== -1);\n    item.json._debug_sanitization = { replacementsCount: replacements.length };\n  }catch(err){\n    item.json = item.json || {};\n    item.json.details = item.json.details || {};\n    item.json.details.audit = item.json.details.audit || {};\n    item.json.details.audit.sanitization = item.json.details.audit.sanitization || {};\n    item.json.details.audit.sanitization.error = err && err.message ? err.message : String(err);\n    item.json._debug_sanitization_error = true;\n  }\n}\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -912,
+        160
+      ],
+      "id": "4857fc2c-ede6-404e-9abb-a8d8c802b4d9",
+      "name": "6. Content Sanitization"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Enhanced Sanitizer Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If safe regenerate chat input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default reply for danger questions": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "If safe regenerate chat input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Default reply for danger questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert output into boolean": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Guard": {
+      "main": [
+        [
+          {
+            "node": "Convert output into boolean",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ChatInput & SessionId": {
+      "main": [
+        [
+          {
+            "node": "AI Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Guard",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enhanced Sanitizer Config": {
+      "main": [
+        [
+          {
+            "node": "1. Input Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Input Validation": {
+      "main": [
+        [
+          {
+            "node": "2. Unicode Normalization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Unicode Normalization": {
+      "main": [
+        [
+          {
+            "node": "3. Fast Pattern Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Fast Pattern Detection": {
+      "main": [
+        [
+          {
+            "node": "4. Advanced Pattern Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Advanced Pattern Detection": {
+      "main": [
+        [
+          {
+            "node": "5. Threat Scoring & Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Threat Scoring & Classification": {
+      "main": [
+        [
+          {
+            "node": "6. Content Sanitization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Content Sanitization": {
+      "main": [
+        [
+          {
+            "node": "Extract ChatInput & SessionId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fc49ba0a-5eed-41d4-8242-be98afebb225",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "276adbeb15f37f3b57bb5faabd12cfa0112bb20465f7059277bed7cbe775413c"
+  },
+  "id": "GqL4nX0srAWUnMKu",
+  "tags": []
+}
