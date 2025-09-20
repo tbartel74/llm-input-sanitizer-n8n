@@ -128,24 +128,28 @@ The sanitizer returns a comprehensive JSON object with security analysis and san
 ## Detection Labels
 
 ### Prompt Injection
+
 - `ignore_instructions` - "Ignore previous instructions" variants
 - `reveal_system` - Attempts to reveal system prompts
 - `role_manipulation` - "Act as system" style attacks
 - `jailbreak_attempt` - DAN mode and similar bypasses
 
 ### Obfuscation Techniques
+
 - `fragmented_tokens` - Spaced or dotted token splitting
 - `zero_width_chars` - Invisible character insertion
 - `homoglyph_substitution` - Cyrillic/Greek character substitution
 - `unicode_obfuscation` - Complex Unicode manipulation
 
 ### Injection Methods
+
 - `comment_injection` - Hidden in /* */ or // comments
 - `delimiter_hiding` - Buried in --- or *** separators
 - `template_syntax` - {{ }} or ${ } template patterns
 - `xss_attempt` - JavaScript or HTML injection
 
 ### Data Leakage
+
 - `secrets_exposure` - API keys, tokens detected
 - `pii_present` - Personal information found
 - `credential_attempt` - Password or auth data
@@ -214,6 +218,7 @@ Pass configuration overrides in the input:
 ### Available Configuration Options
 
 #### Thresholds
+
 ```javascript
 CRITICAL_THRESHOLD: 70,    // 0-100
 HIGH_THRESHOLD: 40,        // 0-100
@@ -221,6 +226,7 @@ MEDIUM_THRESHOLD: 20,      // 0-100
 ```
 
 #### Processing Limits
+
 ```javascript
 MAX_INPUT_LENGTH: 10000,      // characters
 MAX_PROCESSING_TIME: 5000,    // milliseconds
@@ -228,6 +234,7 @@ MAX_DECODE_ITERATIONS: 10,    // decode loops
 ```
 
 #### Feature Toggles
+
 ```javascript
 ENABLE_UNICODE_NORMALIZATION: true,
 ENABLE_HOMOGLYPH_DETECTION: true,
@@ -237,6 +244,7 @@ ENABLE_LLM_GATEKEEPER_HOOKS: false,
 ```
 
 #### Output Control
+
 ```javascript
 STRICT_OUTPUT_MODE: true,      // strict validation
 SANITIZE_LEVEL: 'maximum',     // maximum|standard|minimal

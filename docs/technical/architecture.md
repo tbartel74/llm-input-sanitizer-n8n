@@ -5,6 +5,7 @@
 This document describes an advanced n8n workflow designed to secure prompts and other user-supplied text before they are forwarded to a Large Language Model (LLM). The design follows a defense-in-depth approach: a sequence of canonicalization, detection, and sanitization stages that together reduce the risk of prompt injection, obfuscation, and accidental secrets disclosure.
 
 The workflow is intended for:
+
 * automated regression testing (built-in test generator),
 * runtime protection in production LLM pipelines,
 * auditability and observability (rich metadata and replacement logs).
@@ -114,6 +115,7 @@ The sanitizer returns a structured JSON object that provides the application ful
 * `securitylevel`: `LOW` | `MEDIUM` | `HIGH` | `CRITICAL` (derived from `threatScore` vs thresholds).
 * `securityscore`: Numerical score (0–100) representing aggregated threat level.
 * `result`: Canonical scoring object:
+
 ```json
   {
     "detected": true,
@@ -122,3 +124,4 @@ The sanitizer returns a structured JSON object that provides the application ful
     "labels": ["fragmented_ignore", "reveal_terms"],
     "reason": "fragmented_ignore"
   }
+```

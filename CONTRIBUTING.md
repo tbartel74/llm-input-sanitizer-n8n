@@ -21,6 +21,7 @@ Thank you for your interest in contributing to our LLM input sanitization projec
 ### Development Workflow
 
 #### Prerequisites
+
 - n8n installation (self-hosted or cloud)
 - Basic understanding of n8n workflow development
 - Knowledge of security best practices for LLMs
@@ -44,24 +45,28 @@ Thank you for your interest in contributing to our LLM input sanitization projec
 ## Types of Contributions
 
 ### 🐛 Bug Fixes
+
 - Security bypasses in detection logic
 - Performance issues
 - Configuration problems
 - Documentation errors
 
 ### ✨ New Features
+
 - Additional attack vector detection
 - New sanitization techniques
 - Integration examples
 - Performance optimizations
 
 ### 📖 Documentation
+
 - Setup instructions
 - Usage examples
 - Architecture explanations
 - Best practices guides
 
 ### 🧪 Testing
+
 - New adversarial test cases
 - Edge case scenarios
 - Performance benchmarks
@@ -123,6 +128,7 @@ Since this project deals with security:
 - Maintain consistent formatting
 
 ### Configuration
+
 - Use the centralized config system
 - Avoid hardcoded values
 - Document all new configuration options
@@ -137,6 +143,7 @@ Since this project deals with security:
 ## Recognition
 
 Contributors will be recognized in:
+
 - Repository contributors list
 - Release notes for significant contributions
 - Special mentions for security improvements

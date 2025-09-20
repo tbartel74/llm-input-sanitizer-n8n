@@ -66,6 +66,7 @@ MAX_PROCESSING_TIME: 5000,
 ### Advanced Integration
 
 See `examples/integrations/` for complete integration examples with:
+
 - **Groq LLama Guard**: `groq-llama-guard.json`
 - **Groq Prompt Guard**: `groq-prompt-guard.json`
 
@@ -100,17 +101,20 @@ See `examples/integrations/` for complete integration examples with:
 
 ### Common Issues
 
-**High Processing Time**
+## High Processing Time
+
 - Reduce `MAX_INPUT_LENGTH`
 - Disable `EMBEDDING_HOOKS`
 - Check input complexity
 
-**False Positives**
+## False Positives
+
 - Lower threshold values
 - Review pattern configurations
 - Check homoglyph mappings
 
-**Memory Issues**
+## Memory Issues
+
 - Limit concurrent executions
 - Reduce test case count
 - Optimize workflow settings
