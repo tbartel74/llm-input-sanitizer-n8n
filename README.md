@@ -88,7 +88,8 @@ For detailed setup instructions, see [docs/INSTALLATION.md](docs/INSTALLATION.md
 
 ## 🤝 Contributing
 
-We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before getting started.
+We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md)
+and [Code of Conduct](CODE_OF_CONDUCT.md) before getting started.
 
 ### Quick Links
 
