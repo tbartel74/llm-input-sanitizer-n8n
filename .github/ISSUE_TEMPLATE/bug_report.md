@@ -10,7 +10,9 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 **To Reproduce**
+
 Steps to reproduce the behavior:
+
 1. Import workflow '...'
 2. Configure with '...'
 3. Input text '...'
@@ -23,7 +25,9 @@ A clear and concise description of what you expected to happen.
 What actually happened, including error messages or unexpected output.
 
 **Input and Output**
+
 Please provide:
+
 - **Input text**: The exact input that caused the issue
 - **Expected output**: What the sanitizer should have detected/returned
 - **Actual output**: What the sanitizer actually returned
@@ -36,14 +40,16 @@ Please provide:
 }
 ```
 
-**Security Impact**
+## Security Impact
+
 - [ ] This is a security bypass (input that should be blocked but wasn't)
 - [ ] This is a false positive (safe input that was incorrectly flagged)
 - [ ] This is a performance issue
 - [ ] This is a configuration issue
 - [ ] Other: ___________
 
-**Environment**
+## Environment
+
 - **n8n version**: [e.g. 1.0.0]
 - **Workflow version**: [e.g. v0.2]
 - **Platform**: [e.g. self-hosted, cloud]
@@ -52,8 +58,10 @@ Please provide:
 **Additional context**
 Add any other context about the problem here. Include screenshots if helpful.
 
-**Test Results** (if applicable)
+## Test Results (if applicable)
+
 If you ran the test generator, please include:
+
 - Precision: X.XX
 - Recall: X.XX
 - F1-Score: X.XX
