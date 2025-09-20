@@ -19,7 +19,8 @@ This guide will help you set up the LLM Input Sanitizer in your n8n environment.
 
 ### 2. Configure Settings
 
-The workflow uses a centralized configuration system. Adjust these settings in the **Enhanced Sanitizer Config** node:
+The workflow uses a centralized configuration system. Adjust these settings in
+the **Enhanced Sanitizer Config** node:
 
 ```javascript
 // Core security features

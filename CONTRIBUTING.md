@@ -1,12 +1,14 @@
 # Contributing to LLM Input Sanitizer
 
-Thank you for your interest in contributing to our LLM input sanitization project! This guide will help you get started.
+Thank you for your interest in contributing to our LLM input sanitization
+project! This guide will help you get started.
 
 ## How to Contribute
 
 ### Reporting Issues
 
-1. Check existing [issues](https://github.com/username/llm-input-sanitizer-n8n/issues) first
+1. Check existing [issues](
+   https://github.com/username/llm-input-sanitizer-n8n/issues) first
 2. Use our issue templates for bug reports or feature requests
 3. Provide detailed information about your n8n environment and workflow version
 

@@ -1,10 +1,12 @@
 # API Documentation
 
-This document describes the input/output interface and integration patterns for the LLM Input Sanitizer.
+This document describes the input/output interface and integration patterns
+for the LLM Input Sanitizer.
 
 ## Input Format
 
-The sanitizer accepts various input formats automatically detected from the JSON payload:
+The sanitizer accepts various input formats automatically detected from the
+JSON payload:
 
 ### Standard Input
 
@@ -32,7 +34,8 @@ The sanitizer accepts various input formats automatically detected from the JSON
 
 ## Output Format
 
-The sanitizer returns a comprehensive JSON object with security analysis and sanitized content:
+The sanitizer returns a comprehensive JSON object with security analysis and
+sanitized content:
 
 ### Core Output Fields
 
@@ -143,7 +146,7 @@ The sanitizer returns a comprehensive JSON object with security analysis and san
 
 ### Injection Methods
 
-- `comment_injection` - Hidden in /* */ or // comments
+- `comment_injection` - Hidden in comments
 - `delimiter_hiding` - Buried in --- or *** separators
 - `template_syntax` - {{ }} or ${ } template patterns
 - `xss_attempt` - JavaScript or HTML injection
@@ -276,8 +279,8 @@ INCLUDE_RAW_MATCHES: true,     // include match details
 
 | Code | Description | Resolution |
 |------|-------------|------------|
-| INPUT_TOO_LONG | Input exceeds length limit | Reduce input size or increase limit |
-| PROCESSING_TIMEOUT | Analysis took too long | Simplify input or increase timeout |
+| INPUT_TOO_LONG | Input exceeds limit | Reduce input size |
+| PROCESSING_TIMEOUT | Analysis timeout | Simplify input |
 | INVALID_CONFIG | Configuration error | Check config parameter format |
 | UNICODE_ERROR | Unicode processing failed | Check input encoding |
 
