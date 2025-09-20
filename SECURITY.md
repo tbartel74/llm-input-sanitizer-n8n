@@ -11,12 +11,15 @@ We actively maintain and provide security updates for the following versions:
 
 ## Reporting a Vulnerability
 
-We take the security of our LLM input sanitizer seriously. If you discover a security vulnerability, please follow these steps:
+We take the security of our LLM input sanitizer seriously. If you discover
+a security vulnerability, please follow these steps:
 
 ### How to Report
 
 1. **Do not** create a public GitHub issue for security vulnerabilities
-2. Use GitHub's [private vulnerability reporting](https://github.com/username/llm-input-sanitizer-n8n/security/advisories/new) feature
+2. Use GitHub's [private vulnerability reporting](
+   https://github.com/username/llm-input-sanitizer-n8n/security/advisories/new)
+   feature
 3. Alternatively, email us at [your-email@domain.com] with details
 
 ### What to Include
@@ -38,6 +41,7 @@ Please include as much information as possible:
 ### Security Measures
 
 Our sanitizer is designed to protect against:
+
 - Prompt injection attacks
 - Unicode-based obfuscation
 - Comment injection techniques
@@ -45,4 +49,5 @@ Our sanitizer is designed to protect against:
 - XSS attempts in LLM inputs
 - Data leakage through PII exposure
 
-We regularly test these protections and welcome responsible disclosure of any bypasses or new attack vectors.
+We regularly test these protections and welcome responsible disclosure of
+any bypasses or new attack vectors.

@@ -6,9 +6,12 @@ labels: ['security']
 assignees: ''
 ---
 
-**⚠️ IMPORTANT: For critical security vulnerabilities, please use [private vulnerability reporting](https://github.com/username/llm-input-sanitizer-n8n/security/advisories/new) instead of this public issue.**
+**⚠️ IMPORTANT:** For critical security vulnerabilities, please use
+[private vulnerability reporting](https://github.com/username/llm-input-sanitizer-n8n/security/advisories/new)
+instead of this public issue.
 
-**Vulnerability type**
+## Vulnerability type
+
 - [ ] Prompt injection bypass
 - [ ] Unicode obfuscation bypass
 - [ ] Fragmentation bypass
@@ -18,7 +21,8 @@ assignees: ''
 - [ ] Configuration vulnerability
 - [ ] Other: ___________
 
-**Severity assessment**
+## Severity assessment
+
 - [ ] Critical - Complete bypass of all protections
 - [ ] High - Bypass of major detection categories
 - [ ] Medium - Bypass of specific patterns
@@ -29,11 +33,13 @@ A clear description of the security issue and how it bypasses the sanitizer.
 
 **Proof of concept**
 **Attack payload:**
-```
+
+```text
 [Provide the input that bypasses detection]
 ```
 
 **Current sanitizer output:**
+
 ```json
 {
   "clearoutput": "what the sanitizer returns",

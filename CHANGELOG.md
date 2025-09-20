@@ -2,17 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
+
 - GitHub standard files (SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md)
 - Enhanced .gitignore with comprehensive coverage
 
 ## [0.2.0] - 2024-09-XX
 
 ### Added
+
 - Sequential sanitizer pipeline with 10-stage processing
 - Enhanced test generator with 50+ adversarial examples
 - Comprehensive threat scoring and classification system
@@ -24,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Rich audit logging and transformation tracking
 
 ### Enhanced
+
 - Multi-vector attack detection capabilities
 - Zero-width character handling
 - Template injection detection
@@ -31,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Performance optimization with timeout controls
 
 ### Security
+
 - Protection against fragmentation attacks
 - Mitigation of Unicode-based obfuscation
 - Detection of prompt injection attempts
@@ -40,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [0.1.0] - 2024-09-XX
 
 ### Added
+
 - Basic input sanitization workflow
 - Initial prompt injection detection
 - Simple pattern matching rules
@@ -47,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Documentation and examples
 
 ### Security
+
 - Initial protection against common prompt injection
 - Basic Unicode normalization
 - Simple threat detection

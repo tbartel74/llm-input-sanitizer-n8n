@@ -44,7 +44,7 @@ If you have ideas about how this could be implemented:
 - What's the performance impact?
 - Are there privacy implications?
 
-**Example inputs/outputs**
+## Example inputs/outputs
 
 If applicable, provide examples of:
 
@@ -65,7 +65,7 @@ Example malicious input here
 }
 ```
 
-**Additional context**
+## Additional context
 
 Add any other context, screenshots, research papers, or examples about
 the feature request here.
