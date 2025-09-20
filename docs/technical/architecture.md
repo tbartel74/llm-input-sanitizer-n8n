@@ -50,30 +50,66 @@ security pipeline:
    detectors: zero-width detection, literal escape detection, comment
    injection detection, chat-template tokens, aggressive fragmentation
    regexes. Aggregates `advancedDetection.matches` and computes `threatScore`.
-7. **Threat Scoring & Classification:** Normalizes detection outputs into a canonical `result` object: `{ detected, score, severity, labels, reason }`. Uses thresholds from `sanitizer_config`.
-8. **Content Sanitization:** Applies concrete transformations: remove zero-width chars, unescape literal escapes, de-fragment sensitive phrases and replace them with placeholders (e.g., `[filtered:ignore_instructions]`), neutralize comment payloads and unsafe attributes/constructs. Produces `clearoutput` and `details.audit.sanitization`.
-9. **Test Results Aggregator:** Compares `expected` vs `detected` across tests and computes confusion matrix (TP/FP/FN/TN), `precision`, `recall`, `f1`, `accuracy`, and per-test diagnostics.
-10. **Results Analyzer Enhanced:** Builds final summary report (analysis version, timestamps, and metrics) suitable for dashboards or CI reporting.
+7. **Threat Scoring & Classification:** Normalizes detection outputs into a
+   canonical `result` object: `{ detected, score, severity, labels, reason }`.
+   Uses thresholds from `sanitizer_config`.
+8. **Content Sanitization:** Applies concrete transformations: remove
+   zero-width chars, unescape literal escapes, de-fragment sensitive phrases
+   and replace them with placeholders (e.g., `[filtered:ignore_instructions]`),
+   neutralize comment payloads and unsafe attributes/constructs. Produces
+   `clearoutput` and `details.audit.sanitization`.
+9. **Test Results Aggregator:** Compares `expected` vs `detected` across
+   tests and computes confusion matrix (TP/FP/FN/TN), `precision`, `recall`,
+   `f1`, `accuracy`, and per-test diagnostics.
+10. **Results Analyzer Enhanced:** Builds final summary report (analysis
+    version, timestamps, and metrics) suitable for dashboards or CI reporting.
 
 ## 3. Detailed Analysis of the `Input Sanitizer Enhanced` Node
 
-The `Input Sanitizer Enhanced` logic is implemented across the **Unicode Normalization**, **Advanced Pattern Detection**, and **Content Sanitization** nodes described above. For clarity, the sanitizer's multi-stage pipeline is consolidated below into the canonical processing steps and then followed by the defensive techniques implemented.
+The `Input Sanitizer Enhanced` logic is implemented across the **Unicode
+Normalization**, **Advanced Pattern Detection**, and **Content Sanitization**
+nodes described above. For clarity, the sanitizer's multi-stage pipeline is
+consolidated below into the canonical processing steps and then followed by
+the defensive techniques implemented.
 
 ### 3.1. Sanitization Pipeline
 
 The sanitizer's multi-stage pipeline processes each prompt sequentially through the following steps:
 
-1. **Aggressive Decoding / Unescape loops:** Repeatedly unescape percent-encoding, HTML entities, and textual `\uXXXX` sequences until no further change occurs or a configured iteration limit is reached. This exposes double- or triple-encoded payloads.
+1. **Aggressive Decoding / Unescape loops:** Repeatedly unescape
+   percent-encoding, HTML entities, and textual `\uXXXX` sequences until no
+   further change occurs or a configured iteration limit is reached. This
+   exposes double- or triple-encoded payloads.
 2. **Unicode normalization (NFKC):** Normalize characters to a canonical form to eliminate compatibility variants.
-3. **Invisible / zero-width removal:** Remove zero-width characters (U+200B..U+200D, BOMs) that attackers use to fragment tokens and evade pattern matching.
-4. **Homoglyph mapping / deobfuscation:** Replace common homoglyphs (Cyrillic, fullwidth forms, Greek look-alikes) with canonical Latin equivalents using a configurable mapping (extendable).
-5. **Snapshot for detection:** Preserve an intermediate snapshot (post-decoding, pre-destructive operations) to maximize detection accuracy before irreversible removals.
-6. **Fast pattern detection pass:** Lightweight regex pass to quickly identify obvious injection attempts and indicate whether advanced analysis should be forced.
-7. **Fragmentation-tolerant detection:** Use regex patterns that tolerate arbitrary non-alphanumerics between characters to detect fragmented keywords, e.g., `i n s t r u c t i o n s` or `i.n.s.t.r.u.c.t.i.o.n.s`.
-8. **Comment and delimiter detection:** Detect and neutralize injection hidden inside `/* ... */`, `//`, `#` or within delimiter blocks like `---`, `***`, or template tokens.
-9. **Scoring and classification:** Combine detector weights and rule hits into a single `threatScore` (0–100) and map to severity bands using configurable thresholds (MEDIUM/HIGH/CRITICAL).
-10. **Non-destructive masking / placeholder replacement:** Replace matched sensitive fragments with clear, auditable placeholders (e.g., `[filtered:system_prompt]`) to avoid altering the intent of benign queries more than necessary while preventing dangerous tokens from reaching the LLM.
-11. **Length enforcement and final cleanup:** Enforce `MAX_INPUT_LENGTH`, normalize whitespace, and produce final `clearoutput` along with a detailed audit object describing transformations and replacements.
+3. **Invisible / zero-width removal:** Remove zero-width characters
+   (U+200B..U+200D, BOMs) that attackers use to fragment tokens and evade
+   pattern matching.
+4. **Homoglyph mapping / deobfuscation:** Replace common homoglyphs
+   (Cyrillic, fullwidth forms, Greek look-alikes) with canonical Latin
+   equivalents using a configurable mapping (extendable).
+5. **Snapshot for detection:** Preserve an intermediate snapshot
+   (post-decoding, pre-destructive operations) to maximize detection accuracy
+   before irreversible removals.
+6. **Fast pattern detection pass:** Lightweight regex pass to quickly
+   identify obvious injection attempts and indicate whether advanced analysis
+   should be forced.
+7. **Fragmentation-tolerant detection:** Use regex patterns that tolerate
+   arbitrary non-alphanumerics between characters to detect fragmented
+   keywords, e.g., `i n s t r u c t i o n s` or `i.n.s.t.r.u.c.t.i.o.n.s`.
+8. **Comment and delimiter detection:** Detect and neutralize injection
+   hidden inside `/* ... */`, `//`, `#` or within delimiter blocks like `---`,
+   `***`, or template tokens.
+9. **Scoring and classification:** Combine detector weights and rule hits
+   into a single `threatScore` (0–100) and map to severity bands using
+   configurable thresholds (MEDIUM/HIGH/CRITICAL).
+10. **Non-destructive masking / placeholder replacement:** Replace matched
+    sensitive fragments with clear, auditable placeholders (e.g.,
+    `[filtered:system_prompt]`) to avoid altering the intent of benign
+    queries more than necessary while preventing dangerous tokens from
+    reaching the LLM.
+11. **Length enforcement and final cleanup:** Enforce `MAX_INPUT_LENGTH`,
+    normalize whitespace, and produce final `clearoutput` along with a
+    detailed audit object describing transformations and replacements.
 
 ### 3.2. Mitigated Threats and Defensive Techniques
 
